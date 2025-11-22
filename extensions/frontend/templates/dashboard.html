@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/dashboard.html" class="nav-link active">📊 Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/products.html" class="nav-link">📦 Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/receipts.html" class="nav-link">📥 Receipts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/deliveries.html" class="nav-link">📤 Deliveries</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/transfers.html" class="nav-link">🔄 Transfers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/movements.html" class="nav-link">📋 Move History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/settings.html" class="nav-link">⚙️ Settings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" id="logoutBtn" class="nav-link">🚪 Logout</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>Dashboard</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="topUserName">User</div>
+                        <div class="user-role" id="topUserRole">Role</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Products</div>
+                    <div class="kpi-value" id="kpiTotalProducts">0</div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-label">Low Stock Items</div>
+                    <div class="kpi-value" id="kpiLowStock">0</div>
+                </div>
+                <div class="kpi-card danger">
+                    <div class="kpi-label">Out of Stock</div>
+                    <div class="kpi-value" id="kpiOutOfStock">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Pending Receipts</div>
+                    <div class="kpi-value" id="kpiPendingReceipts">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Pending Deliveries</div>
+                    <div class="kpi-value" id="kpiPendingDeliveries">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Scheduled Transfers</div>
+                    <div class="kpi-value" id="kpiScheduledTransfers">0</div>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Activity</h3>
+                </div>
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Activity Type</label>
+                            <select id="filterType">
+                                <option value="">All Types</option>
+                                <option value="RECEIPT">Receipts</option>
+                                <option value="DELIVERY">Deliveries</option>
+                                <option value="TRANSFER">Transfers</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="filterStatus">
+                                <option value="">All Status</option>
+                                <option value="DRAFT">Draft</option>
+                                <option value="WAITING">Waiting</option>
+                                <option value="READY">Ready</option>
+                                <option value="DONE">Done</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Reference</th>
+                                    <th>Party</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">
+                                        <div class="spinner"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Low Stock Products -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Low Stock Alert</h3>
+                    <a href="/products.html?filter=low-stock" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Current Stock</th>
+                                    <th>Reorder Level</th>
+                                    <th>Deficit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lowStockTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">
+                                        <div class="spinner"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="/js/api.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
