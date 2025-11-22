@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transfers - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link active">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>🔄 Internal Transfers</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Transfers</div>
+                    <div class="kpi-value" id="totalTransfers">0</div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-label">Pending</div>
+                    <div class="kpi-value" id="pendingTransfers">0</div>
+                </div>
+                <div class="kpi-card success">
+                    <div class="kpi-label">Completed</div>
+                    <div class="kpi-value" id="completedTransfers">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Transfer List</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showToast('Create transfer coming soon!', 'info')">+ New Transfer</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Transfer #</th>
+                                    <th>Product</th>
+                                    <th>From Location</th>
+                                    <th>To Location</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transfersTableBody">
+                                <tr><td colspan="7" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        async function loadTransfers() {
+            try {
+                const transfers = await getTransfers();
+                document.getElementById('totalTransfers').textContent = transfers.length;
+                document.getElementById('pendingTransfers').textContent = 
+                    transfers.filter(t => ['DRAFT', 'WAITING'].includes(t.status)).length;
+                document.getElementById('completedTransfers').textContent = 
+                    transfers.filter(t => t.status === 'DONE').length;
+
+                const tbody = document.getElementById('transfersTableBody');
+                if (transfers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No transfers found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = transfers.map(t => `
+                    <tr>
+                        <td><strong>${t.transfer_number}</strong></td>
+                        <td>${t.product_name}</td>
+                        <td>${t.from_warehouse} - ${t.from_location}</td>
+                        <td>${t.to_warehouse} - ${t.to_location}</td>
+                        <td>${formatNumber(t.quantity)} ${t.unit_of_measure}</td>
+                        <td>${getStatusBadge(t.status)}</td>
+                        <td><button class="btn btn-sm btn-secondary">View</button></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('transfersTableBody').innerHTML = 
+                    `<tr><td colspan="7" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+            }
+        }
+
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+        }
+        loadTransfers();
+    </script>
+</body>
+</html>

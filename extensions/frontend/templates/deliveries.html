@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deliveries - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link active">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>📤 Outgoing Deliveries</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Deliveries</div>
+                    <div class="kpi-value" id="totalDeliveries">0</div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-label">Pending</div>
+                    <div class="kpi-value" id="pendingDeliveries">0</div>
+                </div>
+                <div class="kpi-card success">
+                    <div class="kpi-label">Completed</div>
+                    <div class="kpi-value" id="completedDeliveries">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Delivery List</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showToast('Create delivery coming soon!', 'info')">+ New Delivery</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Delivery #</th>
+                                    <th>Customer</th>
+                                    <th>Warehouse</th>
+                                    <th>Scheduled Date</th>
+                                    <th>Status</th>
+                                    <th>Items</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deliveriesTableBody">
+                                <tr><td colspan="7" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        async function loadDeliveries() {
+            try {
+                const deliveries = await getDeliveries();
+                document.getElementById('totalDeliveries').textContent = deliveries.length;
+                document.getElementById('pendingDeliveries').textContent = 
+                    deliveries.filter(d => ['DRAFT', 'WAITING', 'READY'].includes(d.status)).length;
+                document.getElementById('completedDeliveries').textContent = 
+                    deliveries.filter(d => d.status === 'DONE').length;
+
+                const tbody = document.getElementById('deliveriesTableBody');
+                if (deliveries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No deliveries found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = deliveries.map(d => `
+                    <tr>
+                        <td><strong>${d.delivery_number}</strong></td>
+                        <td>${d.customer_name}</td>
+                        <td>${d.warehouse_name}</td>
+                        <td>${formatDate(d.scheduled_date)}</td>
+                        <td>${getStatusBadge(d.status)}</td>
+                        <td>${d.line_count || 0} items</td>
+                        <td><button class="btn btn-sm btn-secondary">View</button></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('deliveriesTableBody').innerHTML = 
+                    `<tr><td colspan="7" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+            }
+        }
+
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+        }
+        loadDeliveries();
+    </script>
+</body>
+</html>

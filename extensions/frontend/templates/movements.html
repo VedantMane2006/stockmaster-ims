@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Movements - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link active">📋 Move History</a></li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>📋 Stock Movement History</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 Filter Movements</h3>
+                </div>
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Movement Type</label>
+                            <select id="typeFilter" onchange="filterMovements()">
+                                <option value="">All Types</option>
+                                <option value="RECEIPT">Receipt</option>
+                                <option value="DELIVERY">Delivery</option>
+                                <option value="TRANSFER_IN">Transfer In</option>
+                                <option value="TRANSFER_OUT">Transfer Out</option>
+                                <option value="ADJUSTMENT">Adjustment</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Search Product</label>
+                            <input type="text" id="searchInput" placeholder="Search by product name or SKU..." onkeyup="filterMovements()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Movement History</h3>
+                    <span id="movementCount" class="badge badge-ready">0 Movements</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Product</th>
+                                    <th>Location</th>
+                                    <th>Type</th>
+                                    <th>Change</th>
+                                    <th>After</th>
+                                    <th>Reference</th>
+                                    <th>By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movementsTableBody">
+                                <tr><td colspan="8" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        let allMovements = [];
+
+        async function loadMovements() {
+            try {
+                const movements = await getStockMovements();
+                allMovements = movements;
+                displayMovements(movements);
+            } catch (error) {
+                document.getElementById('movementsTableBody').innerHTML = 
+                    `<tr><td colspan="8" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+            }
+        }
+
+        function displayMovements(movements) {
+            const tbody = document.getElementById('movementsTableBody');
+            document.getElementById('movementCount').textContent = `${movements.length} Movements`;
+
+            if (movements.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No movements found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = movements.map(m => {
+                const changeClass = m.quantity_change > 0 ? 'gradient-text-success' : 'gradient-text-danger';
+                const typeColors = {
+                    'RECEIPT': 'badge-done',
+                    'DELIVERY': 'badge-ready',
+                    'TRANSFER_IN': 'badge-waiting',
+                    'TRANSFER_OUT': 'badge-draft',
+                    'ADJUSTMENT': 'badge-cancelled'
+                };
+                return `
+                    <tr>
+                        <td>${formatDate(m.created_at)}</td>
+                        <td><strong>${m.product_name}</strong><br><small>${m.sku}</small></td>
+                        <td>${m.warehouse_name}<br><small>${m.location_name}</small></td>
+                        <td><span class="badge ${typeColors[m.movement_type]}">${m.movement_type.replace('_', ' ')}</span></td>
+                        <td class="${changeClass}"><strong>${m.quantity_change > 0 ? '+' : ''}${formatNumber(m.quantity_change)}</strong></td>
+                        <td>${formatNumber(m.quantity_after)}</td>
+                        <td>${m.reference_type} #${m.reference_id}</td>
+                        <td>${m.created_by_name}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterMovements() {
+            const type = document.getElementById('typeFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            let filtered = allMovements.filter(m => {
+                const matchesType = !type || m.movement_type === type;
+                const matchesSearch = m.product_name.toLowerCase().includes(search) || 
+                                    m.sku.toLowerCase().includes(search);
+                return matchesType && matchesSearch;
+            });
+
+            displayMovements(filtered);
+        }
+
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+        }
+        loadMovements();
+    </script>
+</body>
+</html>

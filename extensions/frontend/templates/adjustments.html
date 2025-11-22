@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adjustments - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link active">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>⚙️ Stock Adjustments</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Adjustments</div>
+                    <div class="kpi-value" id="totalAdjustments">0</div>
+                </div>
+                <div class="kpi-card danger">
+                    <div class="kpi-label">Negative Adjustments</div>
+                    <div class="kpi-value" id="negativeAdjustments">0</div>
+                </div>
+                <div class="kpi-card success">
+                    <div class="kpi-label">Positive Adjustments</div>
+                    <div class="kpi-value" id="positiveAdjustments">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Adjustment List</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showToast('Create adjustment coming soon!', 'info')">+ New Adjustment</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Adjustment #</th>
+                                    <th>Product</th>
+                                    <th>Location</th>
+                                    <th>Before</th>
+                                    <th>Counted</th>
+                                    <th>Difference</th>
+                                    <th>Reason</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adjustmentsTableBody">
+                                <tr><td colspan="8" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        async function loadAdjustments() {
+            try {
+                const adjustments = await getAdjustments();
+                document.getElementById('totalAdjustments').textContent = adjustments.length;
+                document.getElementById('negativeAdjustments').textContent = 
+                    adjustments.filter(a => a.quantity_difference < 0).length;
+                document.getElementById('positiveAdjustments').textContent = 
+                    adjustments.filter(a => a.quantity_difference > 0).length;
+
+                const tbody = document.getElementById('adjustmentsTableBody');
+                if (adjustments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No adjustments found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = adjustments.map(a => {
+                    const diffClass = a.quantity_difference < 0 ? 'gradient-text-danger' : 'gradient-text-success';
+                    return `
+                        <tr>
+                            <td><strong>${a.adjustment_number}</strong></td>
+                            <td>${a.product_name}</td>
+                            <td>${a.warehouse_name} - ${a.location_name}</td>
+                            <td>${formatNumber(a.quantity_before)}</td>
+                            <td>${formatNumber(a.quantity_counted)}</td>
+                            <td class="${diffClass}"><strong>${a.quantity_difference > 0 ? '+' : ''}${formatNumber(a.quantity_difference)}</strong></td>
+                            <td><span class="badge badge-draft">${a.reason}</span></td>
+                            <td>${formatDate(a.created_at)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                document.getElementById('adjustmentsTableBody').innerHTML = 
+                    `<tr><td colspan="8" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+            }
+        }
+
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+        }
+        loadAdjustments();
+    </script>
+</body>
+</html>

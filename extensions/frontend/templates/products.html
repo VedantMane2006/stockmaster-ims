@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/dashboard.html" class="nav-link">📊 Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/products.html" class="nav-link active">📦 Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/receipts.html" class="nav-link">📥 Receipts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/deliveries.html" class="nav-link">📤 Deliveries</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/transfers.html" class="nav-link">🔄 Transfers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/movements.html" class="nav-link">📋 Move History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/settings.html" class="nav-link">⚙️ Settings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="logout()">🚪 Logout</a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>📦 Products Management</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 Search & Filter</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showAddProductModal()">+ Add Product</button>
+                </div>
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Search</label>
+                            <input type="text" id="searchInput" placeholder="Search by name or SKU..." onkeyup="filterProducts()">
+                        </div>
+                        <div class="filter-group">
+                            <label>Category</label>
+                            <select id="categoryFilter" onchange="filterProducts()">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Stock Status</label>
+                            <select id="stockFilter" onchange="filterProducts()">
+                                <option value="">All Products</option>
+                                <option value="low">Low Stock</option>
+                                <option value="out">Out of Stock</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📦 Product List</h3>
+                    <span id="productCount" class="badge badge-ready">0 Products</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>Total Stock</th>
+                                    <th>Reorder Level</th>
+                                    <th>Unit</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center;">
+                                        <div class="spinner"></div>
+                                        Loading products...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Add New Product</h3>
+                <button class="close-modal" onclick="closeModal('addProductModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm" onsubmit="handleAddProduct(event)">
+                    <div class="form-group">
+                        <label>SKU *</label>
+                        <input type="text" name="sku" required placeholder="e.g., SKU001">
+                    </div>
+                    <div class="form-group">
+                        <label>Product Name *</label>
+                        <input type="text" name="product_name" required placeholder="Enter product name">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category_id" id="modalCategorySelect">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit of Measure *</label>
+                        <select name="unit_of_measure" required>
+                            <option value="UNIT">Unit</option>
+                            <option value="KG">Kilogram</option>
+                            <option value="LITER">Liter</option>
+                            <option value="METER">Meter</option>
+                            <option value="BOX">Box</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reorder Level</label>
+                        <input type="number" name="reorder_level" value="10" min="0">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('addProductModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Add Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        let allProducts = [];
+        let categories = [];
+
+        async function loadProducts() {
+            try {
+                const products = await getProducts();
+                allProducts = products;
+                displayProducts(products);
+                document.getElementById('productCount').textContent = `${products.length} Products`;
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('productsTableBody').innerHTML = `
+                    <tr><td colspan="8" style="text-align: center; color: var(--danger);">
+                        Error loading products: ${error.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                categories = await getCategories();
+                const selects = [document.getElementById('categoryFilter'), document.getElementById('modalCategorySelect')];
+                selects.forEach(select => {
+                    categories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.category_id;
+                        option.textContent = cat.category_name;
+                        select.appendChild(option);
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        function displayProducts(products) {
+            const tbody = document.getElementById('productsTableBody');
+            if (products.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No products found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = products.map(product => {
+                const stockStatus = product.total_stock <= 0 ? 'Out of Stock' : 
+                                  product.total_stock <= product.reorder_level ? 'Low Stock' : 'In Stock';
+                const statusClass = product.total_stock <= 0 ? 'badge-cancelled' : 
+                                  product.total_stock <= product.reorder_level ? 'badge-waiting' : 'badge-done';
+                
+                return `
+                    <tr onclick="viewProduct(${product.product_id})">
+                        <td><strong>${product.sku}</strong></td>
+                        <td>${product.product_name}</td>
+                        <td>${product.category_name || 'N/A'}</td>
+                        <td><strong>${formatNumber(product.total_stock)}</strong></td>
+                        <td>${product.reorder_level}</td>
+                        <td>${product.unit_of_measure}</td>
+                        <td><span class="badge ${statusClass}">${stockStatus}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editProduct(${product.product_id})">Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterProducts() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const stockFilter = document.getElementById('stockFilter').value;
+
+            let filtered = allProducts.filter(product => {
+                const matchesSearch = product.product_name.toLowerCase().includes(search) || 
+                                    product.sku.toLowerCase().includes(search);
+                const matchesCategory = !category || product.category_id == category;
+                
+                let matchesStock = true;
+                if (stockFilter === 'low') {
+                    matchesStock = product.total_stock > 0 && product.total_stock <= product.reorder_level;
+                } else if (stockFilter === 'out') {
+                    matchesStock = product.total_stock <= 0;
+                }
+
+                return matchesSearch && matchesCategory && matchesStock;
+            });
+
+            displayProducts(filtered);
+            document.getElementById('productCount').textContent = `${filtered.length} Products`;
+        }
+
+        function showAddProductModal() {
+            document.getElementById('addProductModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        async function handleAddProduct(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+
+            try {
+                await createProduct(data);
+                showToast('Product added successfully!', 'success');
+                closeModal('addProductModal');
+                event.target.reset();
+                loadProducts();
+            } catch (error) {
+                showToast('Error adding product: ' + error.message, 'error');
+            }
+        }
+
+        function viewProduct(id) {
+            window.location.href = `/product-details.html?id=${id}`;
+        }
+
+        function editProduct(id) {
+            showToast('Edit functionality coming soon!', 'info');
+        }
+
+        // Load user info
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+        }
+
+        // Initialize
+        loadCategories();
+        loadProducts();
+    </script>
+</body>
+</html>

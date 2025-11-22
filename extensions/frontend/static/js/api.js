@@ -48,15 +48,27 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     
     try {
         const response = await fetch(`${API_URL}${endpoint}`, options);
-        const data = await response.json();
         
+        // Handle 401 Unauthorized
         if (response.status === 401) {
             logout();
             return null;
         }
         
+        // Try to parse JSON response
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // If JSON parsing fails, use text
+            const text = await response.text();
+            throw new Error(`API Error ${response.status}: ${text || response.statusText}`);
+        }
+        
+        // Handle non-OK responses with better error messages
         if (!response.ok) {
-            throw new Error(data.error || 'API request failed');
+            const errorMsg = data.error || data.message || `Request failed with status ${response.status}`;
+            throw new Error(errorMsg);
         }
         
         return data;

@@ -25,14 +25,43 @@ document.getElementById('logoutBtn').addEventListener('click', (e) => {
 async function loadDashboard() {
     try {
         // Load KPIs
+        console.log('Loading dashboard KPIs...');
         const kpis = await getDashboardKPIs();
+        console.log('KPIs received:', kpis);
+        
         if (kpis) {
-            document.getElementById('kpiTotalProducts').textContent = formatNumber(kpis.total_products || 0);
-            document.getElementById('kpiLowStock').textContent = formatNumber(kpis.low_stock_count || 0);
-            document.getElementById('kpiOutOfStock').textContent = formatNumber(kpis.out_of_stock_count || 0);
-            document.getElementById('kpiPendingReceipts').textContent = formatNumber(kpis.pending_receipts || 0);
-            document.getElementById('kpiPendingDeliveries').textContent = formatNumber(kpis.pending_deliveries || 0);
-            document.getElementById('kpiScheduledTransfers').textContent = formatNumber(kpis.scheduled_transfers || 0);
+            // Parse KPI values
+            const totalProducts = parseInt(kpis.total_products) || 0;
+            const lowStock = parseInt(kpis.low_stock_count) || 0;
+            const outOfStock = parseInt(kpis.out_of_stock_count) || 0;
+            const pendingReceipts = parseInt(kpis.pending_receipts) || 0;
+            const pendingDeliveries = parseInt(kpis.pending_deliveries) || 0;
+            const scheduledTransfers = parseInt(kpis.scheduled_transfers) || 0;
+            
+            // Animate KPI values if animation function is available
+            if (typeof window.animateKPIValue === 'function') {
+                window.animateKPIValue(document.getElementById('kpiTotalProducts'), 0, totalProducts, 1000);
+                window.animateKPIValue(document.getElementById('kpiLowStock'), 0, lowStock, 1000);
+                window.animateKPIValue(document.getElementById('kpiOutOfStock'), 0, outOfStock, 1000);
+                window.animateKPIValue(document.getElementById('kpiPendingReceipts'), 0, pendingReceipts, 1000);
+                window.animateKPIValue(document.getElementById('kpiPendingDeliveries'), 0, pendingDeliveries, 1000);
+                window.animateKPIValue(document.getElementById('kpiScheduledTransfers'), 0, scheduledTransfers, 1000);
+            } else {
+                // Fallback: set values directly
+                document.getElementById('kpiTotalProducts').textContent = totalProducts;
+                document.getElementById('kpiLowStock').textContent = lowStock;
+                document.getElementById('kpiOutOfStock').textContent = outOfStock;
+                document.getElementById('kpiPendingReceipts').textContent = pendingReceipts;
+                document.getElementById('kpiPendingDeliveries').textContent = pendingDeliveries;
+                document.getElementById('kpiScheduledTransfers').textContent = scheduledTransfers;
+            }
+            
+            console.log('KPIs updated successfully:', {
+                totalProducts, lowStock, outOfStock, 
+                pendingReceipts, pendingDeliveries, scheduledTransfers
+            });
+        } else {
+            console.error('No KPI data received');
         }
         
         // Load recent activity
@@ -43,7 +72,7 @@ async function loadDashboard() {
         
     } catch (error) {
         console.error('Error loading dashboard:', error);
-        alert('Failed to load dashboard data');
+        showToast('Failed to load dashboard data: ' + error.message, 'error');
     }
 }
 

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipts - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link active">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>📥 Incoming Receipts</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Receipts</div>
+                    <div class="kpi-value" id="totalReceipts">0</div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-label">Pending</div>
+                    <div class="kpi-value" id="pendingReceipts">0</div>
+                </div>
+                <div class="kpi-card success">
+                    <div class="kpi-label">Completed</div>
+                    <div class="kpi-value" id="completedReceipts">0</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 Filter Receipts</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showCreateReceiptModal()">+ New Receipt</button>
+                </div>
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="statusFilter" onchange="filterReceipts()">
+                                <option value="">All Status</option>
+                                <option value="DRAFT">Draft</option>
+                                <option value="WAITING">Waiting</option>
+                                <option value="READY">Ready</option>
+                                <option value="DONE">Done</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Search</label>
+                            <input type="text" id="searchInput" placeholder="Search by receipt number or supplier..." onkeyup="filterReceipts()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Receipts Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 Receipt List</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Receipt #</th>
+                                    <th>Supplier</th>
+                                    <th>Warehouse</th>
+                                    <th>Scheduled Date</th>
+                                    <th>Status</th>
+                                    <th>Items</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receiptsTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center;">
+                                        <div class="spinner"></div>
+                                        Loading receipts...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        let allReceipts = [];
+
+        async function loadReceipts() {
+            try {
+                const receipts = await getReceipts();
+                allReceipts = receipts;
+                displayReceipts(receipts);
+                updateStats(receipts);
+            } catch (error) {
+                console.error('Error loading receipts:', error);
+                document.getElementById('receiptsTableBody').innerHTML = `
+                    <tr><td colspan="8" style="text-align: center; color: var(--danger);">
+                        ${error.message || 'Error loading receipts'}
+                    </td></tr>
+                `;
+            }
+        }
+
+        function updateStats(receipts) {
+            document.getElementById('totalReceipts').textContent = receipts.length;
+            document.getElementById('pendingReceipts').textContent = 
+                receipts.filter(r => ['DRAFT', 'WAITING', 'READY'].includes(r.status)).length;
+            document.getElementById('completedReceipts').textContent = 
+                receipts.filter(r => r.status === 'DONE').length;
+        }
+
+        function displayReceipts(receipts) {
+            const tbody = document.getElementById('receiptsTableBody');
+            if (receipts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No receipts found. Create your first receipt!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = receipts.map(receipt => `
+                <tr onclick="viewReceipt(${receipt.receipt_id})">
+                    <td><strong>${receipt.receipt_number}</strong></td>
+                    <td>${receipt.supplier_name}</td>
+                    <td>${receipt.warehouse_name}</td>
+                    <td>${formatDate(receipt.scheduled_date)}</td>
+                    <td>${getStatusBadge(receipt.status)}</td>
+                    <td>${receipt.line_count || 0} items</td>
+                    <td>${receipt.created_by_name}</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); viewReceipt(${receipt.receipt_id})">View</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterReceipts() {
+            const status = document.getElementById('statusFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            let filtered = allReceipts.filter(receipt => {
+                const matchesStatus = !status || receipt.status === status;
+                const matchesSearch = receipt.receipt_number.toLowerCase().includes(search) || 
+                                    receipt.supplier_name.toLowerCase().includes(search);
+                return matchesStatus && matchesSearch;
+            });
+
+            displayReceipts(filtered);
+        }
+
+        function showCreateReceiptModal() {
+            showToast('Receipt creation form coming soon!', 'info');
+        }
+
+        function viewReceipt(id) {
+            showToast(`Viewing receipt #${id}`, 'info');
+        }
+
+        // Load user info
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+        }
+
+        // Initialize
+        loadReceipts();
+    </script>
+</body>
+</html>

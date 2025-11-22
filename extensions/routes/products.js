@@ -4,6 +4,16 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
+// Get low stock products (MUST be before /products/:id)
+router.get('/products/low-stock', authMiddleware, async (req, res) => {
+    try {
+        const products = await query('SELECT * FROM v_low_stock_products LIMIT 50');
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get all products
 router.get('/products', authMiddleware, async (req, res) => {
     try {
@@ -97,16 +107,6 @@ router.put('/products/:id', authMiddleware, async (req, res) => {
         res.json({ message: 'Product updated' });
     } catch (error) {
         res.status(400).json({ error: error.message });
-    }
-});
-
-// Get low stock products
-router.get('/products/low-stock', authMiddleware, async (req, res) => {
-    try {
-        const products = await query('SELECT * FROM v_low_stock_products LIMIT 50');
-        res.json(products);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
 });
 

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link active">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>⚙️ System Settings</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>👤 Profile Settings</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="fullName" placeholder="Your full name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" placeholder="your@email.com" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <input type="text" id="role" disabled>
+                    </div>
+                    <button class="btn btn-primary" onclick="showToast('Profile update coming soon!', 'info')">Update Profile</button>
+                </div>
+            </div>
+
+            <!-- Warehouses & Locations -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🏭 Warehouses & Locations</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showToast('Add warehouse coming soon!', 'info')">+ Add Warehouse</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Warehouse Name</th>
+                                    <th>Address</th>
+                                    <th>Locations</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="warehousesTableBody">
+                                <tr><td colspan="6" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📂 Product Categories</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showToast('Add category coming soon!', 'info')">+ Add Category</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Category Name</th>
+                                    <th>Description</th>
+                                    <th>Products</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoriesTableBody">
+                                <tr><td colspan="4" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Info -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>ℹ️ System Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Version</div>
+                            <div class="kpi-value" style="font-size: 1.5rem;">1.0.0</div>
+                        </div>
+                        <div class="kpi-card success">
+                            <div class="kpi-label">Database</div>
+                            <div class="kpi-value" style="font-size: 1.5rem;">MySQL</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div class="kpi-label">Server</div>
+                            <div class="kpi-value" style="font-size: 1.5rem;">Node.js</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        async function loadWarehouses() {
+            try {
+                const warehouses = await getWarehouses();
+                const tbody = document.getElementById('warehousesTableBody');
+                
+                if (warehouses.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No warehouses found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = warehouses.map(w => `
+                    <tr>
+                        <td><strong>${w.warehouse_code}</strong></td>
+                        <td>${w.warehouse_name}</td>
+                        <td>${w.address || 'N/A'}</td>
+                        <td><span class="badge badge-ready">View Locations</span></td>
+                        <td><span class="badge ${w.is_active ? 'badge-done' : 'badge-cancelled'}">${w.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td><button class="btn btn-sm btn-secondary">Edit</button></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('warehousesTableBody').innerHTML = 
+                    `<tr><td colspan="6" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                const categories = await getCategories();
+                const tbody = document.getElementById('categoriesTableBody');
+                
+                if (categories.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No categories found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = categories.map(c => `
+                    <tr>
+                        <td><strong>${c.category_name}</strong></td>
+                        <td>${c.description || 'N/A'}</td>
+                        <td><span class="badge badge-ready">View Products</span></td>
+                        <td><button class="btn btn-sm btn-secondary">Edit</button></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('categoriesTableBody').innerHTML = 
+                    `<tr><td colspan="4" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+            }
+        }
+
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+            document.getElementById('fullName').value = user.full_name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('role').value = user.role_name;
+        }
+
+        loadWarehouses();
+        loadCategories();
+    </script>
+</body>
+</html>
