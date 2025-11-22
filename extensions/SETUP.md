@@ -12,20 +12,7 @@
 
 OR just use Docker! See `START_HERE.md`
 
-## 🚀 Quick Start (Docker - Recommended)
-
-```bash
-docker-compose up --build
-```
-
-Open http://localhost:5000
-- Login: admin@stockmaster.com / admin123
-
-That's it! Everything is configured automatically.
-
----
-
-## 📦 Manual Installation Steps
+## 📦 Installation Steps
 
 ### 1. Install Prerequisites
 - Python 3.8+: https://www.python.org/downloads/

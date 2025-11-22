@@ -11,15 +11,7 @@ All Python files have been removed.
                             QUICK START OPTIONS
 ================================================================================
 
-OPTION 1: DOCKER (EASIEST - 5 MINUTES)
----------------------------------------
-1. Install Docker Desktop: https://www.docker.com/products/docker-desktop/
-2. Open PowerShell in this folder
-3. Run: docker-compose up --build
-4. Open: http://localhost:5000
-5. Login: admin@stockmaster.com / admin123
-
-OPTION 2: AUTOMATED SCRIPT (10 MINUTES)
+OPTION 1: AUTOMATED SCRIPT (10 MINUTES)
 ----------------------------------------
 1. Right-click PowerShell → Run as Administrator
 2. Run: .\install_windows.ps1
@@ -27,7 +19,7 @@ OPTION 2: AUTOMATED SCRIPT (10 MINUTES)
 4. Run: .\setup_stockmaster.ps1
 5. Follow the instructions
 
-OPTION 3: MANUAL INSTALLATION (15 MINUTES)
+OPTION 2: MANUAL INSTALLATION (15 MINUTES)
 -------------------------------------------
 1. Install Python 3.8+: https://www.python.org/downloads/
 2. Install MySQL 8.0+: https://dev.mysql.com/downloads/installer/
@@ -37,19 +29,15 @@ OPTION 3: MANUAL INSTALLATION (15 MINUTES)
                               DOCUMENTATION
 ================================================================================
 
-📖 NODE_SETUP.md       - Node.js setup guide (START HERE!)
+📖 QUICKSTART.md       - Quick 5-step setup (START HERE!)
+📖 NODE_SETUP.md       - Detailed Node.js setup guide
 📖 MIGRATION_TO_NODEJS.md - What changed from Python to Node.js
-📖 SETUP.md            - Detailed installation guide
-📖 START_HERE.md       - Overview of all options
+📖 README.md           - Project overview
 
 ================================================================================
                             WHAT YOU NEED
 ================================================================================
 
-FOR DOCKER:
-- Docker Desktop only
-
-FOR MANUAL INSTALLATION:
 - Node.js 16 or higher (with npm)
 - MySQL 8.0 or higher
 
@@ -79,10 +67,10 @@ Password: admin123
 → Verify password in .env file
 → Make sure database 'stockmaster' exists
 
-"Docker issues"
-→ Make sure Docker Desktop is running
-→ Try: docker-compose down -v
-→ Then: docker-compose up --build
+"npm install fails"
+→ Delete node_modules folder
+→ Run: npm install again
+→ Make sure you have Node.js 16+
 
 ================================================================================
                               FEATURES
@@ -103,9 +91,8 @@ Password: admin123
                           RECOMMENDED APPROACH
 ================================================================================
 
-1. Try DOCKER first (easiest!)
-2. If Docker doesn't work, use AUTOMATED SCRIPT
-3. Last resort: MANUAL INSTALLATION
+1. Try AUTOMATED SCRIPT first (easiest!)
+2. If that doesn't work, use MANUAL INSTALLATION
 
 ================================================================================
                             NEED HELP?
@@ -118,7 +105,9 @@ Read the documentation files in this order:
 
 ================================================================================
 
-Ready to start? Open QUICK_START.md or run:
-    docker-compose up --build
+Ready to start? Open QUICKSTART.md or run:
+    npm install
+    npm run init-db
+    npm start
 
 ================================================================================

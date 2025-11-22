@@ -23,8 +23,6 @@ A modular, real-time inventory management system built with Node.js, Express.js 
 - Node.js 16+ and npm
 - MySQL 8.0+
 
-OR just Docker Desktop!
-
 ### Installation
 1. Install dependencies: `npm install`
 2. Configure database in `.env`

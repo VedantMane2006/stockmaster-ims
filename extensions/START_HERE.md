@@ -4,36 +4,9 @@ You have **3 options** to run StockMaster. Choose the one that works best for yo
 
 ---
 
-## ⭐ OPTION 1: Docker (RECOMMENDED - Easiest!)
+## 📦 OPTION 1: Automated Script (Windows)
 
-**Best for:** Everyone, especially if you don't want to install Python and MySQL manually.
-
-### What you need:
-- Docker Desktop only
-
-### Steps:
-1. **Install Docker Desktop**
-   - Download from: https://www.docker.com/products/docker-desktop/
-   - Install and restart your computer
-   - Open Docker Desktop and wait for it to start
-
-2. **Run StockMaster**
-   ```powershell
-   cd path\to\StockMaster
-   docker-compose up --build
-   ```
-
-3. **Access the app**
-   - Open browser: http://localhost:5000
-   - Login: admin@stockmaster.com / admin123
-
-**Full guide:** See `MYSQL_SETUP.md`
-
----
-
-## 📦 OPTION 2: Manual Installation (Windows)
-
-**Best for:** If you want full control or already have Python/MySQL installed.
+**Best for:** Quick automated installation on Windows.
 
 ### What you need:
 - Python 3.8+ 
@@ -81,6 +54,12 @@ You have **3 options** to run StockMaster. Choose the one that works best for yo
 
 ---
 
+## 📦 OPTION 2: Manual Installation
+
+**Best for:** Full control over installation.
+
+---
+
 ## 🐧 OPTION 3: Linux/Mac Installation
 
 ### What you need:
@@ -91,26 +70,24 @@ You have **3 options** to run StockMaster. Choose the one that works best for yo
 ```bash
 # Install dependencies (Ubuntu/Debian)
 sudo apt update
-sudo apt install python3 python3-pip python3-venv postgresql postgresql-contrib
+sudo apt install nodejs npm mysql-server
 
 # Setup project
 cd StockMaster
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+npm install
 
 # Create database
-sudo -u postgres psql
+sudo mysql
 CREATE DATABASE stockmaster;
-\q
+EXIT;
 
 # Configure
 cp .env.example .env
 nano .env  # Update DB_PASSWORD
 
 # Initialize & Run
-python init_db.py
-python app.py
+npm run init-db
+npm start
 ```
 
 **Full guide:** See `SETUP.md`
@@ -121,8 +98,8 @@ python app.py
 
 | Method | Difficulty | Setup Time | Best For |
 |--------|-----------|------------|----------|
-| **Docker** | ⭐ Easy | 5 minutes | Everyone |
-| **Windows Manual** | ⭐⭐ Medium | 15 minutes | Windows users with control needs |
+| **Automated Script** | ⭐ Easy | 10 minutes | Windows users |
+| **Manual Installation** | ⭐⭐ Medium | 15 minutes | All users who want control |
 | **Linux/Mac** | ⭐⭐ Medium | 10 minutes | Linux/Mac users |
 
 ---

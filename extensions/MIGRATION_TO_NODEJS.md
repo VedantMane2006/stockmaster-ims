@@ -116,12 +116,7 @@ const [rows] = await pool.execute(query, params);
 
 ## 🚀 How to Run
 
-### Option 1: Docker (Easiest)
-```bash
-docker-compose up --build
-```
-
-### Option 2: Manual Installation
+### Installation
 
 **Step 1: Install Node.js**
 - Download from: https://nodejs.org/

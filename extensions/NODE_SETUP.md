@@ -24,16 +24,7 @@ winget install OpenJS.NodeJS.LTS
 2. Install MySQL 8.0
 3. Remember your root password!
 
-## Quick Start with Docker (Easiest!)
-
-```powershell
-cd path\to\StockMaster
-docker-compose up --build
-```
-
-Open http://localhost:5000
-
-## Manual Setup
+## Setup
 
 ### Step 1: Install Dependencies
 
