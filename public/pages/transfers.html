@@ -22,6 +22,10 @@
                     <li class="nav-item"><a href="/transfers.html" class="nav-link active">🔄 Transfers</a></li>
                     <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
                     <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item" id="nav-employees" style="display:none;"><a href="/employees.html" class="nav-link">👥 Employees</a></li>
+                    <li class="nav-item">
+                        <a href="/about.html" class="nav-link">ℹ️ About</a>
+                    </li>
                     <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
                     <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
                 </ul>
@@ -31,11 +35,9 @@
         <main class="main-content">
             <div class="top-bar">
                 <h2>🔄 Internal Transfers</h2>
-                <div class="user-menu">
-                    <div class="user-info">
-                        <div class="user-name" id="userName">Admin User</div>
-                        <div class="user-role" id="userRole">Administrator</div>
-                    </div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Admin User</div>
+                    <div class="user-role" id="userRole">Administrator</div>
                 </div>
             </div>
 
@@ -43,10 +45,6 @@
                 <div class="kpi-card">
                     <div class="kpi-label">Total Transfers</div>
                     <div class="kpi-value" id="totalTransfers">0</div>
-                </div>
-                <div class="kpi-card warning">
-                    <div class="kpi-label">Pending</div>
-                    <div class="kpi-value" id="pendingTransfers">0</div>
                 </div>
                 <div class="kpi-card success">
                     <div class="kpi-label">Completed</div>
@@ -57,7 +55,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3>📋 Transfer List</h3>
-                    <button class="btn btn-primary btn-sm" onclick="showToast('Create transfer coming soon!', 'info')">+ New Transfer</button>
+                    <button class="btn btn-primary btn-sm" onclick="openModal('createTransferModal')">+ New Transfer</button>
                 </div>
                 <div class="card-body">
                     <div class="table-container">
@@ -70,7 +68,7 @@
                                     <th>To Location</th>
                                     <th>Quantity</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
+                                    <th>Notes</th>
                                 </tr>
                             </thead>
                             <tbody id="transfersTableBody">
@@ -83,15 +81,126 @@
         </main>
     </div>
 
+    <!-- Create Transfer Modal -->
+    <div class="modal" id="createTransferModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>+ New Transfer</h3>
+                <button class="close-modal" onclick="closeModal('createTransferModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createTransferForm" onsubmit="handleCreateTransfer(event)">
+                    <div class="form-group">
+                        <label>Transfer Number (Optional)</label>
+                        <input type="text" name="transfer_number">
+                    </div>
+                    <div class="form-group">
+                        <label>Product *</label>
+                        <select name="product_id" id="transferProductSelect" required>
+                            <option value="">Select Product</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>From Warehouse *</label>
+                            <select id="fromWarehouseSelect" required onchange="loadLocationsForWarehouse(this.value, 'fromLocationSelect')">
+                                <option value="">Select Warehouse</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>From Location *</label>
+                            <select name="from_location_id" id="fromLocationSelect" required>
+                                <option value="">Select Location</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>To Warehouse *</label>
+                            <select id="toWarehouseSelect" required onchange="loadLocationsForWarehouse(this.value, 'toLocationSelect')">
+                                <option value="">Select Warehouse</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>To Location *</label>
+                            <select name="to_location_id" id="toLocationSelect" required>
+                                <option value="">Select Location</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Quantity *</label>
+                        <input type="number" name="quantity" required min="1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2"></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('createTransferModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Execute Transfer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/api.js"></script>
     <script src="/js/theme.js"></script>
     <script>
+        async function init() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.full_name;
+                document.getElementById('userRole').textContent = user.role_name;
+                document.getElementById('userFullName').textContent = user.full_name;
+            }
+
+            try {
+                const allWarehouses = await getWarehouses();
+                const w1 = document.getElementById('fromWarehouseSelect');
+                const w2 = document.getElementById('toWarehouseSelect');
+                allWarehouses.forEach(w => {
+                    w1.add(new Option(w.warehouse_name, w.warehouse_id));
+                    w2.add(new Option(w.warehouse_name, w.warehouse_id));
+                });
+
+                const allProducts = await getProducts();
+                const pSelect = document.getElementById('transferProductSelect');
+                allProducts.forEach(p => {
+                    pSelect.add(new Option(`${p.sku} - ${p.product_name}`, p.product_id));
+                });
+
+                await loadTransfers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function loadLocationsForWarehouse(warehouseId, selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Select Location</option>';
+            if (!warehouseId) return;
+            
+            try {
+                const locations = await getWarehouseLocations(warehouseId);
+                locations.forEach(l => {
+                    select.add(new Option(`${l.location_name} (${l.location_type})`, l.location_id));
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
         async function loadTransfers() {
             try {
                 const transfers = await getTransfers();
                 document.getElementById('totalTransfers').textContent = transfers.length;
-                document.getElementById('pendingTransfers').textContent = 
-                    transfers.filter(t => ['DRAFT', 'WAITING'].includes(t.status)).length;
                 document.getElementById('completedTransfers').textContent = 
                     transfers.filter(t => t.status === 'DONE').length;
 
@@ -109,7 +218,7 @@
                         <td>${t.to_warehouse} - ${t.to_location}</td>
                         <td>${formatNumber(t.quantity)} ${t.unit_of_measure}</td>
                         <td>${getStatusBadge(t.status)}</td>
-                        <td><button class="btn btn-sm btn-secondary">View</button></td>
+                        <td>${t.notes || '-'}</td>
                     </tr>
                 `).join('');
             } catch (error) {
@@ -118,13 +227,23 @@
             }
         }
 
-        const user = getCurrentUser();
-        if (user) {
-            document.getElementById('userName').textContent = user.full_name;
-            document.getElementById('userRole').textContent = user.role_name;
-            document.getElementById('userFullName').textContent = user.full_name;
+        async function handleCreateTransfer(e) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            if(!data.transfer_number) delete data.transfer_number;
+
+            try {
+                await createTransfer(data);
+                showToast('Transfer completed successfully', 'success');
+                closeModal('createTransferModal');
+                e.target.reset();
+                loadTransfers();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
         }
-        loadTransfers();
+
+        init();
     </script>
 </body>
 </html>

@@ -72,6 +72,7 @@ SELECT
     r.received_date,
     u.full_name AS created_by_name,
     r.created_at,
+    r.notes,
     COUNT(rl.receipt_line_id) AS line_count,
     COALESCE(SUM(rl.quantity_expected), 0) AS total_expected,
     COALESCE(SUM(rl.quantity_received), 0) AS total_received
@@ -82,7 +83,7 @@ JOIN users u ON r.created_by = u.user_id
 LEFT JOIN receipt_lines rl ON r.receipt_id = rl.receipt_id
 GROUP BY r.receipt_id, r.receipt_number, r.supplier_name, w.warehouse_name,
          l.location_name, r.status, r.scheduled_date, r.received_date,
-         u.full_name, r.created_at
+         u.full_name, r.created_at, r.notes
 ORDER BY r.created_at DESC;
 
 -- 5. Receipt lines with product SKU, name, and pending quantity
@@ -116,6 +117,7 @@ SELECT
     d.delivered_date,
     u.full_name AS created_by_name,
     d.created_at,
+    d.notes,
     COUNT(dl.delivery_line_id) AS line_count,
     COALESCE(SUM(dl.quantity_ordered), 0) AS total_ordered,
     COALESCE(SUM(dl.quantity_delivered), 0) AS total_delivered
@@ -126,7 +128,7 @@ JOIN users u ON d.created_by = u.user_id
 LEFT JOIN delivery_order_lines dl ON d.delivery_id = dl.delivery_id
 GROUP BY d.delivery_id, d.delivery_number, d.customer_name, w.warehouse_name,
          l.location_name, d.status, d.scheduled_date, d.delivered_date,
-         u.full_name, d.created_at
+         u.full_name, d.created_at, d.notes
 ORDER BY d.created_at DESC;
 
 -- 7. Delivery order lines with product details and pending quantity

@@ -1,6 +1,6 @@
 const express = require('express');
 const { query, callProcedure } = require('../config/database');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -45,7 +45,7 @@ router.get('/adjustments/:id', authMiddleware, async (req, res) => {
 });
 
 // Create adjustment
-router.post('/adjustments', authMiddleware, async (req, res) => {
+router.post('/adjustments', authMiddleware, authorize(['ADMIN', 'MANAGER']), async (req, res) => {
     try {
         const { product_id, location_id, quantity_counted, reason, notes } = req.body;
         

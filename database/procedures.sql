@@ -50,9 +50,9 @@ BEGIN
         END IF;
         
         -- Retrieve current stock level at destination location
-        SELECT quantity INTO v_current_qty
-        FROM product_locations
-        WHERE product_id = v_product_id AND location_id = v_location_id;
+        SET v_current_qty = (SELECT quantity 
+                             FROM product_locations 
+                             WHERE product_id = v_product_id AND location_id = v_location_id);
         
         -- Upsert stock level
         IF v_current_qty IS NULL THEN
@@ -131,9 +131,9 @@ BEGIN
         END IF;
         
         -- Check current stock availability
-        SELECT quantity INTO v_current_stock
-        FROM product_locations
-        WHERE product_id = v_product_id AND location_id = v_location_id;
+        SET v_current_stock = (SELECT quantity 
+                               FROM product_locations 
+                               WHERE product_id = v_product_id AND location_id = v_location_id);
         
         IF v_current_stock IS NULL OR v_current_stock < v_quantity_delivered THEN
             SIGNAL SQLSTATE '45000' 
@@ -190,9 +190,9 @@ BEGIN
     DECLARE v_transfer_id INT;
     
     -- Verify available stock at origin location
-    SELECT quantity INTO v_current_stock
-    FROM product_locations
-    WHERE product_id = p_product_id AND location_id = p_from_location_id;
+    SET v_current_stock = (SELECT quantity 
+                           FROM product_locations 
+                           WHERE product_id = p_product_id AND location_id = p_from_location_id);
     
     IF v_current_stock IS NULL OR v_current_stock < p_quantity THEN
         SIGNAL SQLSTATE '45000' 
@@ -226,9 +226,9 @@ BEGIN
     SET v_from_qty = v_current_stock - p_quantity;
     
     -- Add to destination location
-    SELECT quantity INTO v_to_qty
-    FROM product_locations
-    WHERE product_id = p_product_id AND location_id = p_to_location_id;
+    SET v_to_qty = (SELECT quantity 
+                    FROM product_locations 
+                    WHERE product_id = p_product_id AND location_id = p_to_location_id);
     
     IF v_to_qty IS NULL THEN
         INSERT INTO product_locations (product_id, location_id, quantity)
@@ -283,9 +283,9 @@ BEGIN
     DECLARE v_adjustment_id INT;
     
     -- Determine current stock before adjustment
-    SELECT COALESCE(quantity, 0) INTO v_quantity_before
-    FROM product_locations
-    WHERE product_id = p_product_id AND location_id = p_location_id;
+    SET v_quantity_before = (SELECT COALESCE(quantity, 0) 
+                             FROM product_locations 
+                             WHERE product_id = p_product_id AND location_id = p_location_id);
     
     IF v_quantity_before IS NULL THEN
         SET v_quantity_before = 0.00;

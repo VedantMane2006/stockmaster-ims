@@ -1,6 +1,6 @@
 const express = require('express');
 const { query, callProcedure } = require('../config/database');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -58,7 +58,7 @@ router.get('/receipts/:id', authMiddleware, async (req, res) => {
 });
 
 // Create receipt
-router.post('/receipts', authMiddleware, async (req, res) => {
+router.post('/receipts', authMiddleware, authorize(['ADMIN', 'MANAGER', 'INVENTORY_CLERK']), async (req, res) => {
     try {
         const { supplier_name, warehouse_id, location_id, scheduled_date, notes, lines } = req.body;
         
@@ -93,12 +93,18 @@ router.post('/receipts', authMiddleware, async (req, res) => {
 });
 
 // Add receipt line
-router.post('/receipts/:id/lines', authMiddleware, async (req, res) => {
+router.post('/receipts/:id/lines', authMiddleware, authorize(['ADMIN', 'MANAGER', 'INVENTORY_CLERK']), async (req, res) => {
     try {
         const { product_id, quantity_expected } = req.body;
         
         if (!product_id || !quantity_expected) {
             return res.status(400).json({ error: 'Missing required fields' });
+        }
+        
+        const rcp = await query('SELECT status FROM receipts WHERE receipt_id = ?', [req.params.id]);
+        if (rcp.length === 0) return res.status(404).json({ error: 'Receipt not found' });
+        if (rcp[0].status !== 'DRAFT') {
+            return res.status(403).json({ error: 'Can only add lines to DRAFT receipts.' });
         }
         
         await query(
@@ -121,9 +127,38 @@ router.put('/receipts/:id/status', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Status required' });
         }
         
+        const rcp = await query('SELECT status FROM receipts WHERE receipt_id = ?', [req.params.id]);
+        if (rcp.length === 0) return res.status(404).json({ error: 'Receipt not found' });
+        
+        const currentStatus = rcp[0].status;
+        const role = req.user.role_name || (req.user.role_id === 1 ? 'ADMIN' : null);
+        
+        // Role Checks for specific transitions
+        if (status === 'WAITING' && currentStatus === 'DRAFT') {
+            if (!['ADMIN', 'MANAGER', 'INVENTORY_CLERK'].includes(role)) {
+                return res.status(403).json({ error: 'Unauthorized to confirm receipt' });
+            }
+        } else if (status === 'READY' && currentStatus === 'WAITING') {
+            if (!['ADMIN', 'MANAGER', 'WAREHOUSE_WORKER'].includes(role)) {
+                return res.status(403).json({ error: 'Unauthorized to mark receipt as ready' });
+            }
+        } else if (status === 'CANCELLED') {
+             if (!['ADMIN', 'MANAGER'].includes(role)) {
+                return res.status(403).json({ error: 'Unauthorized to cancel receipt' });
+            }
+        } else {
+             // Block arbitrary transitions like WAITING to DRAFT unless Admin
+             if (role !== 'ADMIN') {
+                 return res.status(403).json({ error: 'Invalid state transition' });
+             }
+        }
+        
         await query(
-            'UPDATE receipts SET status = ? WHERE receipt_id = ?',
-            [status, req.params.id]
+            `UPDATE receipts 
+             SET status = ?, 
+                 is_delayed = IF(? = 'CANCELLED' AND scheduled_date < CURRENT_DATE(), TRUE, is_delayed) 
+             WHERE receipt_id = ?`,
+            [status, status, req.params.id]
         );
         
         res.json({ message: 'Status updated' });
@@ -133,12 +168,31 @@ router.put('/receipts/:id/status', authMiddleware, async (req, res) => {
 });
 
 // Update received quantity
-router.put('/receipts/:id/lines/:lineId/receive', authMiddleware, async (req, res) => {
+router.put('/receipts/:id/lines/:lineId/receive', authMiddleware, authorize(['ADMIN', 'MANAGER', 'WAREHOUSE_WORKER']), async (req, res) => {
     try {
         const { quantity_received } = req.body;
         
         if (quantity_received === undefined) {
             return res.status(400).json({ error: 'Quantity required' });
+        }
+
+        const rcp = await query('SELECT status FROM receipts WHERE receipt_id = ?', [req.params.id]);
+        if (rcp.length === 0) return res.status(404).json({ error: 'Receipt not found' });
+        if (!['WAITING', 'READY'].includes(rcp[0].status)) {
+            return res.status(403).json({ error: 'Can only update physical quantities in WAITING or READY status.' });
+        }
+
+        const lineData = await query(
+            'SELECT quantity_expected FROM receipt_lines WHERE receipt_line_id = ?',
+            [req.params.lineId]
+        );
+
+        if (lineData.length === 0) {
+            return res.status(404).json({ error: 'Line not found' });
+        }
+
+        if (Number(quantity_received) > Number(lineData[0].quantity_expected)) {
+            return res.status(400).json({ error: 'Quantity received cannot exceed quantity expected' });
         }
         
         await query(
@@ -153,9 +207,35 @@ router.put('/receipts/:id/lines/:lineId/receive', authMiddleware, async (req, re
 });
 
 // Validate receipt
-router.post('/receipts/:id/validate', authMiddleware, async (req, res) => {
+router.post('/receipts/:id/validate', authMiddleware, authorize(['ADMIN', 'MANAGER']), async (req, res) => {
     try {
+        const rcp = await query('SELECT status, scheduled_date FROM receipts WHERE receipt_id = ?', [req.params.id]);
+        if (rcp.length === 0) return res.status(404).json({ error: 'Receipt not found' });
+        if (rcp[0].status !== 'READY') return res.status(403).json({ error: 'Receipt must be in READY status to validate' });
+
+        const total = await query('SELECT SUM(quantity_received) as total FROM receipt_lines WHERE receipt_id = ?', [req.params.id]);
+        if (!total[0].total || Number(total[0].total) === 0) {
+            return res.status(400).json({ error: 'Cannot validate receipt: no items have been received.' });
+        }
+        
+        // Execute stock update
         await callProcedure('sp_validate_receipt', [req.params.id, req.user.user_id]);
+        
+        // Persist Delayed status
+        let isDelayed = false;
+        if (rcp[0].scheduled_date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const schedDate = new Date(rcp[0].scheduled_date);
+            schedDate.setHours(0, 0, 0, 0);
+            if (today > schedDate) {
+                isDelayed = true;
+            }
+        }
+
+        await query('UPDATE receipts SET status = ?, is_delayed = ?, received_date = NOW() WHERE receipt_id = ?', 
+                    ['DONE', isDelayed, req.params.id]);
+
         res.json({ message: 'Receipt validated, stock updated' });
     } catch (error) {
         res.status(400).json({ error: error.message });

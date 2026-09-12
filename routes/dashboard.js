@@ -1,6 +1,6 @@
 const express = require('express');
 const { query } = require('../config/database');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -30,7 +30,7 @@ router.get('/dashboard/stock-movements', authMiddleware, async (req, res) => {
     try {
         const { product_id, location_id, movement_type, limit = 50 } = req.query;
         
-        let sql = 'SELECT * FROM v_stock_movements WHERE 1=1';
+        let sql = 'SELECT * FROM v_audit_log WHERE 1=1';
         const params = [];
         
         if (product_id) {

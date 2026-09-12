@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employees - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item" id="nav-employees" style="display:none;"><a href="/employees.html" class="nav-link active">👥 Employees</a></li>
+                    <li class="nav-item">
+                        <a href="/about.html" class="nav-link">ℹ️ About</a>
+                    </li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>👥 Employee Management</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role" id="userRole">Administrator</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header and Add -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>👥 Employee Roster</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showAddEmployeeModal()">+ Add Employee</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeesTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">Loading employees...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div class="modal" id="addEmployeeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Add New Employee</h3>
+                <button class="close-modal" onclick="closeModal('addEmployeeModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addEmployeeForm" onsubmit="handleAddEmployee(event)">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" name="full_name" required placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" name="email" required placeholder="name@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <input type="password" name="password" required placeholder="Temporary password">
+                    </div>
+                    <div class="form-group">
+                        <label>Role *</label>
+                        <select name="role_id" id="addRoleSelect" required>
+                            <!-- Roles loaded via JS -->
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('addEmployeeModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Add Employee</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Employee Modal -->
+    <div class="modal" id="editEmployeeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Edit Employee</h3>
+                <button class="close-modal" onclick="closeModal('editEmployeeModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editEmployeeForm" onsubmit="handleEditEmployee(event)">
+                    <input type="hidden" id="editUserId">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="editFullName" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Role *</label>
+                        <select id="editRoleSelect" required>
+                            <!-- Roles loaded via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Account Status</label>
+                        <select id="editStatusSelect" required>
+                            <option value="1">Active</option>
+                            <option value="0">Deactivated</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('editEmployeeModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        let allEmployees = [];
+        let allRoles = [];
+
+        async function loadRoles() {
+            try {
+                // Assuming we add getRoles() to api.js
+                const roles = await apiCall('/roles');
+                allRoles = roles;
+                const addSelect = document.getElementById('addRoleSelect');
+                const editSelect = document.getElementById('editRoleSelect');
+                
+                let opts = '<option value="">Select Role</option>';
+                roles.forEach(r => {
+                    opts += `<option value="${r.role_id}">${r.role_name}</option>`;
+                });
+                
+                addSelect.innerHTML = opts;
+                editSelect.innerHTML = opts;
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadEmployees() {
+            try {
+                const employees = await apiCall('/users');
+                allEmployees = employees;
+                const tbody = document.getElementById('employeesTableBody');
+                
+                tbody.innerHTML = employees.map(emp => `
+                    <tr>
+                        <td><strong>${emp.full_name}</strong></td>
+                        <td>${emp.email}</td>
+                        <td><span class="badge badge-waiting">${emp.role_name}</span></td>
+                        <td><span class="badge ${emp.is_active ? 'badge-done' : 'badge-cancelled'}">${emp.is_active ? 'Active' : 'Deactivated'}</span></td>
+                        <td>${emp.last_login ? new Date(emp.last_login).toLocaleString() : 'Never'}</td>
+                        <td>
+                            ${emp.role_id !== 1 ? `<button class="btn btn-sm btn-secondary" onclick="openEditEmployee(${emp.user_id})">Edit</button>` : '<span style="color:#94a3b8">Admin</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('employeesTableBody').innerHTML = `<tr><td colspan="6" style="color:red">Error: ${error.message}</td></tr>`;
+            }
+        }
+
+        function showAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').classList.add('active');
+        }
+
+        function openEditEmployee(id) {
+            const emp = allEmployees.find(e => e.user_id === id);
+            if (!emp) return;
+            document.getElementById('editUserId').value = emp.user_id;
+            document.getElementById('editFullName').value = emp.full_name;
+            document.getElementById('editRoleSelect').value = emp.role_id;
+            document.getElementById('editStatusSelect').value = emp.is_active ? "1" : "0";
+            document.getElementById('editEmployeeModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        async function handleAddEmployee(e) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            try {
+                await apiCall('/users', 'POST', data);
+                showToast('Employee created successfully!', 'success');
+                closeModal('addEmployeeModal');
+                e.target.reset();
+                loadEmployees();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function handleEditEmployee(e) {
+            e.preventDefault();
+            const id = document.getElementById('editUserId').value;
+            const role_id = document.getElementById('editRoleSelect').value;
+            const is_active = document.getElementById('editStatusSelect').value === "1";
+            
+            try {
+                await apiCall(`/users/${id}`, 'PUT', { role_id, is_active });
+                showToast('Employee updated successfully!', 'success');
+                closeModal('editEmployeeModal');
+                loadEmployees();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Load user info and restrict access
+        const user = getCurrentUser();
+        if (user) {
+            if (user.role_name !== 'ADMIN') {
+                alert('Access Denied');
+                window.location.href = '/dashboard.html';
+            } else {
+                document.getElementById('nav-employees').style.display = 'block';
+            }
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name;
+            document.getElementById('userFullName').textContent = user.full_name;
+            
+            loadRoles();
+            loadEmployees();
+        }
+    </script>
+</body>
+</html>

@@ -22,6 +22,12 @@
                     <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
                     <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
                     <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item" id="nav-employees" style="display:none;">
+                        <a href="/employees.html" class="nav-link">👥 Employees</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/about.html" class="nav-link">ℹ️ About</a>
+                    </li>
                     <li class="nav-item"><a href="/settings.html" class="nav-link active">⚙️ Settings</a></li>
                     <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
                 </ul>
@@ -31,11 +37,9 @@
         <main class="main-content">
             <div class="top-bar">
                 <h2>⚙️ System Settings</h2>
-                <div class="user-menu">
-                    <div class="user-info">
-                        <div class="user-name" id="userName">Admin User</div>
-                        <div class="user-role" id="userRole">Administrator</div>
-                    </div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Admin User</div>
+                    <div class="user-role" id="userRole">Administrator</div>
                 </div>
             </div>
 
@@ -45,27 +49,52 @@
                     <h3>👤 Profile Settings</h3>
                 </div>
                 <div class="card-body">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" id="fullName" placeholder="Your full name">
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="email" placeholder="your@email.com" disabled>
-                    </div>
-                    <div class="form-group">
-                        <label>Role</label>
-                        <input type="text" id="role" disabled>
-                    </div>
-                    <button class="btn btn-primary" onclick="showToast('Profile update coming soon!', 'info')">Update Profile</button>
+                    <form onsubmit="updateProfile(event)">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="fullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <input type="text" id="role" disabled>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Update Name</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔒 Change Password</h3>
+                </div>
+                <div class="card-body">
+                    <form onsubmit="changePassword(event)">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Change Password</button>
+                    </form>
                 </div>
             </div>
 
             <!-- Warehouses & Locations -->
             <div class="card">
                 <div class="card-header">
-                    <h3>🏭 Warehouses & Locations</h3>
-                    <button class="btn btn-primary btn-sm" onclick="showToast('Add warehouse coming soon!', 'info')">+ Add Warehouse</button>
+                    <h3>🏭 Warehouses</h3>
                 </div>
                 <div class="card-body">
                     <div class="table-container">
@@ -75,13 +104,11 @@
                                     <th>Code</th>
                                     <th>Warehouse Name</th>
                                     <th>Address</th>
-                                    <th>Locations</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="warehousesTableBody">
-                                <tr><td colspan="6" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                                <tr><td colspan="4" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -92,7 +119,6 @@
             <div class="card">
                 <div class="card-header">
                     <h3>📂 Product Categories</h3>
-                    <button class="btn btn-primary btn-sm" onclick="showToast('Add category coming soon!', 'info')">+ Add Category</button>
                 </div>
                 <div class="card-body">
                     <div class="table-container">
@@ -101,12 +127,10 @@
                                 <tr>
                                     <th>Category Name</th>
                                     <th>Description</th>
-                                    <th>Products</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="categoriesTableBody">
-                                <tr><td colspan="4" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                                <tr><td colspan="2" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -147,7 +171,7 @@
                 const tbody = document.getElementById('warehousesTableBody');
                 
                 if (warehouses.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No warehouses found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No warehouses found</td></tr>';
                     return;
                 }
 
@@ -156,14 +180,12 @@
                         <td><strong>${w.warehouse_code}</strong></td>
                         <td>${w.warehouse_name}</td>
                         <td>${w.address || 'N/A'}</td>
-                        <td><span class="badge badge-ready">View Locations</span></td>
                         <td><span class="badge ${w.is_active ? 'badge-done' : 'badge-cancelled'}">${w.is_active ? 'Active' : 'Inactive'}</span></td>
-                        <td><button class="btn btn-sm btn-secondary">Edit</button></td>
                     </tr>
                 `).join('');
             } catch (error) {
                 document.getElementById('warehousesTableBody').innerHTML = 
-                    `<tr><td colspan="6" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+                    `<tr><td colspan="4" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
             }
         }
 
@@ -173,7 +195,7 @@
                 const tbody = document.getElementById('categoriesTableBody');
                 
                 if (categories.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No categories found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">No categories found</td></tr>';
                     return;
                 }
 
@@ -181,13 +203,11 @@
                     <tr>
                         <td><strong>${c.category_name}</strong></td>
                         <td>${c.description || 'N/A'}</td>
-                        <td><span class="badge badge-ready">View Products</span></td>
-                        <td><button class="btn btn-sm btn-secondary">Edit</button></td>
                     </tr>
                 `).join('');
             } catch (error) {
                 document.getElementById('categoriesTableBody').innerHTML = 
-                    `<tr><td colspan="4" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+                    `<tr><td colspan="2" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
             }
         }
 
@@ -199,6 +219,48 @@
             document.getElementById('fullName').value = user.full_name;
             document.getElementById('email').value = user.email;
             document.getElementById('role').value = user.role_name;
+        }
+
+        async function updateProfile(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('fullName').value;
+            try {
+                await apiCall('/auth/update-profile', 'PUT', { full_name: fullName });
+                showToast('Profile updated', 'success');
+                // Update local storage
+                const u = getCurrentUser();
+                if (u) {
+                    u.full_name = fullName;
+                    localStorage.setItem('user', JSON.stringify(u));
+                    document.getElementById('userName').textContent = fullName;
+                    document.getElementById('userFullName').textContent = fullName;
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function changePassword(e) {
+            e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                await apiCall('/auth/change-password', 'PUT', { 
+                    current_password: currentPassword, 
+                    new_password: newPassword 
+                });
+                showToast('Password changed successfully', 'success');
+                e.target.reset();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
         }
 
         loadWarehouses();

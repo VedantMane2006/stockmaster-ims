@@ -1,6 +1,6 @@
 const express = require('express');
 const { query, callProcedure } = require('../config/database');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -45,7 +45,7 @@ router.get('/transfers/:id', authMiddleware, async (req, res) => {
 });
 
 // Create and execute transfer
-router.post('/transfers', authMiddleware, async (req, res) => {
+router.post('/transfers', authMiddleware, authorize(['ADMIN', 'MANAGER', 'WAREHOUSE_WORKER']), async (req, res) => {
     try {
         const { product_id, from_location_id, to_location_id, quantity, notes } = req.body;
         

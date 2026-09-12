@@ -110,6 +110,11 @@ async function updateProduct(id, data) {
     return await apiCall(`/products/${id}`, 'PUT', data);
 }
 
+// Get product locations
+async function getProductLocations() {
+    return await apiCall('/products/locations');
+}
+
 async function getLowStockProducts() {
     return await apiCall('/products/low-stock');
 }
@@ -238,7 +243,7 @@ function formatNumber(num) {
     return new Intl.NumberFormat().format(num);
 }
 
-function getStatusBadge(status) {
+function getStatusBadge(status, scheduledDate = null, isDelayed = false) {
     const statusMap = {
         'DRAFT': 'badge-draft',
         'WAITING': 'badge-waiting',
@@ -246,5 +251,22 @@ function getStatusBadge(status) {
         'DONE': 'badge-done',
         'CANCELLED': 'badge-cancelled'
     };
-    return `<span class="badge ${statusMap[status] || 'badge-draft'}">${status}</span>`;
+    
+    let badgeHtml = `<span class="badge ${statusMap[status] || 'badge-draft'}">${status}</span>`;
+    
+    let actuallyDelayed = isDelayed;
+    if (!actuallyDelayed && scheduledDate && (status === 'WAITING' || status === 'READY')) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
+        const sched = new Date(scheduledDate);
+        if (sched < today) {
+            actuallyDelayed = true;
+        }
+    }
+    
+    if (actuallyDelayed) {
+        badgeHtml += ` <span class="badge badge-cancelled" style="margin-left: 4px;">DELAYED</span>`;
+    }
+    
+    return badgeHtml;
 }

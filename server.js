@@ -10,6 +10,7 @@ const deliveryRoutes = require('./routes/deliveries');
 const transferRoutes = require('./routes/transfers');
 const adjustmentRoutes = require('./routes/adjustments');
 const dashboardRoutes = require('./routes/dashboard');
+const userRoutes = require('./routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +31,7 @@ app.use('/api', deliveryRoutes);
 app.use('/api', transferRoutes);
 app.use('/api', adjustmentRoutes);
 app.use('/api', dashboardRoutes);
+app.use('/api', userRoutes);
 
 // Serve HTML pages
 app.get('/', (req, res) => {

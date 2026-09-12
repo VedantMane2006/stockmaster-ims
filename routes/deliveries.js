@@ -1,6 +1,6 @@
 const express = require('express');
 const { query, callProcedure } = require('../config/database');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -58,7 +58,7 @@ router.get('/deliveries/:id', authMiddleware, async (req, res) => {
 });
 
 // Create delivery
-router.post('/deliveries', authMiddleware, async (req, res) => {
+router.post('/deliveries', authMiddleware, authorize(['ADMIN', 'MANAGER', 'INVENTORY_CLERK']), async (req, res) => {
     try {
         const { customer_name, warehouse_id, location_id, scheduled_date, notes, lines } = req.body;
         
@@ -93,12 +93,18 @@ router.post('/deliveries', authMiddleware, async (req, res) => {
 });
 
 // Add delivery line
-router.post('/deliveries/:id/lines', authMiddleware, async (req, res) => {
+router.post('/deliveries/:id/lines', authMiddleware, authorize(['ADMIN', 'MANAGER', 'INVENTORY_CLERK']), async (req, res) => {
     try {
         const { product_id, quantity_ordered } = req.body;
         
         if (!product_id || !quantity_ordered) {
             return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const del = await query('SELECT status FROM delivery_orders WHERE delivery_id = ?', [req.params.id]);
+        if (del.length === 0) return res.status(404).json({ error: 'Delivery not found' });
+        if (del[0].status !== 'DRAFT') {
+            return res.status(403).json({ error: 'Can only add lines to DRAFT deliveries.' });
         }
         
         await query(
@@ -120,10 +126,39 @@ router.put('/deliveries/:id/status', authMiddleware, async (req, res) => {
         if (!status) {
             return res.status(400).json({ error: 'Status required' });
         }
+
+        const del = await query('SELECT status FROM delivery_orders WHERE delivery_id = ?', [req.params.id]);
+        if (del.length === 0) return res.status(404).json({ error: 'Delivery not found' });
+        
+        const currentStatus = del[0].status;
+        const role = req.user.role_name || (req.user.role_id === 1 ? 'ADMIN' : null);
+        
+        // Role Checks for specific transitions
+        if (status === 'WAITING' && currentStatus === 'DRAFT') {
+            if (!['ADMIN', 'MANAGER', 'INVENTORY_CLERK'].includes(role)) {
+                return res.status(403).json({ error: 'Unauthorized to confirm delivery' });
+            }
+        } else if (status === 'READY' && currentStatus === 'WAITING') {
+            if (!['ADMIN', 'MANAGER', 'WAREHOUSE_WORKER'].includes(role)) {
+                return res.status(403).json({ error: 'Unauthorized to mark delivery as ready' });
+            }
+        } else if (status === 'CANCELLED') {
+             if (!['ADMIN', 'MANAGER'].includes(role)) {
+                return res.status(403).json({ error: 'Unauthorized to cancel delivery' });
+            }
+        } else {
+             // Block arbitrary transitions like WAITING to DRAFT unless Admin
+             if (role !== 'ADMIN') {
+                 return res.status(403).json({ error: 'Invalid state transition' });
+             }
+        }
         
         await query(
-            'UPDATE delivery_orders SET status = ? WHERE delivery_id = ?',
-            [status, req.params.id]
+            `UPDATE delivery_orders 
+             SET status = ?, 
+                 is_delayed = IF(? = 'CANCELLED' AND scheduled_date < CURRENT_DATE(), TRUE, is_delayed) 
+             WHERE delivery_id = ?`,
+            [status, status, req.params.id]
         );
         
         res.json({ message: 'Status updated' });
@@ -133,12 +168,31 @@ router.put('/deliveries/:id/status', authMiddleware, async (req, res) => {
 });
 
 // Update delivered quantity
-router.put('/deliveries/:id/lines/:lineId/deliver', authMiddleware, async (req, res) => {
+router.put('/deliveries/:id/lines/:lineId/deliver', authMiddleware, authorize(['ADMIN', 'MANAGER', 'WAREHOUSE_WORKER']), async (req, res) => {
     try {
         const { quantity_delivered } = req.body;
         
         if (quantity_delivered === undefined) {
             return res.status(400).json({ error: 'Quantity required' });
+        }
+
+        const del = await query('SELECT status FROM delivery_orders WHERE delivery_id = ?', [req.params.id]);
+        if (del.length === 0) return res.status(404).json({ error: 'Delivery not found' });
+        if (!['WAITING', 'READY'].includes(del[0].status)) {
+            return res.status(403).json({ error: 'Can only update physical quantities in WAITING or READY status.' });
+        }
+
+        const lineData = await query(
+            'SELECT quantity_ordered FROM delivery_order_lines WHERE delivery_line_id = ?',
+            [req.params.lineId]
+        );
+
+        if (lineData.length === 0) {
+            return res.status(404).json({ error: 'Line not found' });
+        }
+
+        if (Number(quantity_delivered) > Number(lineData[0].quantity_ordered)) {
+            return res.status(400).json({ error: 'Quantity delivered cannot exceed quantity ordered' });
         }
         
         await query(
@@ -153,9 +207,34 @@ router.put('/deliveries/:id/lines/:lineId/deliver', authMiddleware, async (req, 
 });
 
 // Validate delivery
-router.post('/deliveries/:id/validate', authMiddleware, async (req, res) => {
+router.post('/deliveries/:id/validate', authMiddleware, authorize(['ADMIN', 'MANAGER']), async (req, res) => {
     try {
+        const del = await query('SELECT status, scheduled_date FROM delivery_orders WHERE delivery_id = ?', [req.params.id]);
+        if (del.length === 0) return res.status(404).json({ error: 'Delivery not found' });
+        if (del[0].status !== 'READY') return res.status(403).json({ error: 'Delivery must be in READY status to validate' });
+
+        const total = await query('SELECT SUM(quantity_delivered) as total FROM delivery_order_lines WHERE delivery_id = ?', [req.params.id]);
+        if (!total[0].total || Number(total[0].total) === 0) {
+            return res.status(400).json({ error: 'Cannot validate delivery: no items have been delivered.' });
+        }
+        
         await callProcedure('sp_validate_delivery', [req.params.id, req.user.user_id]);
+
+        // Persist Delayed status
+        let isDelayed = false;
+        if (del[0].scheduled_date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const schedDate = new Date(del[0].scheduled_date);
+            schedDate.setHours(0, 0, 0, 0);
+            if (today > schedDate) {
+                isDelayed = true;
+            }
+        }
+
+        await query('UPDATE delivery_orders SET status = ?, is_delayed = ?, delivered_date = NOW() WHERE delivery_id = ?', 
+                    ['DONE', isDelayed, req.params.id]);
+
         res.json({ message: 'Delivery validated, stock updated' });
     } catch (error) {
         res.status(400).json({ error: error.message });

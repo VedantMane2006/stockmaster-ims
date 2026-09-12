@@ -38,6 +38,12 @@
                     <li class="nav-item">
                         <a href="/movements.html" class="nav-link">📋 Move History</a>
                     </li>
+                    <li class="nav-item" id="nav-employees" style="display:none;">
+                        <a href="/employees.html" class="nav-link">👥 Employees</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/about.html" class="nav-link">ℹ️ About</a>
+                    </li>
                     <li class="nav-item">
                         <a href="/settings.html" class="nav-link">⚙️ Settings</a>
                     </li>
@@ -60,66 +66,132 @@
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>🔍 Search & Filter</h3>
-                    <button class="btn btn-primary btn-sm" onclick="showAddProductModal()">+ Add Product</button>
+            <!-- Tabs -->
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; border-bottom: 1px solid #e2e8f0;">
+                <button onclick="switchTab('products')" id="tab-products" style="padding: 0.5rem 1rem; border: none; background: transparent; border-bottom: 2px solid #2563EB; font-weight: bold; color: #2563EB; cursor: pointer;">Product Summary</button>
+                <button onclick="switchTab('locator')" id="tab-locator" style="padding: 0.5rem 1rem; border: none; background: transparent; border-bottom: 2px solid transparent; font-weight: bold; color: #64748b; cursor: pointer;">Stock Locator</button>
+            </div>
+
+            <div id="products-view">
+                <!-- Filters -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🔍 Search & Filter</h3>
+                        <button class="btn btn-primary btn-sm" onclick="showAddProductModal()">+ Add Product</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="filters">
+                            <div class="filter-group">
+                                <label>Search</label>
+                                <input type="text" id="searchInput" placeholder="Search by name or SKU..." onkeyup="filterProducts()">
+                            </div>
+                            <div class="filter-group">
+                                <label>Category</label>
+                                <select id="categoryFilter" onchange="filterProducts()">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Stock Status</label>
+                                <select id="stockFilter" onchange="filterProducts()">
+                                    <option value="">All Products</option>
+                                    <option value="low">Low Stock</option>
+                                    <option value="out">Out of Stock</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="filters">
-                        <div class="filter-group">
-                            <label>Search</label>
-                            <input type="text" id="searchInput" placeholder="Search by name or SKU..." onkeyup="filterProducts()">
-                        </div>
-                        <div class="filter-group">
-                            <label>Category</label>
-                            <select id="categoryFilter" onchange="filterProducts()">
-                                <option value="">All Categories</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Stock Status</label>
-                            <select id="stockFilter" onchange="filterProducts()">
-                                <option value="">All Products</option>
-                                <option value="low">Low Stock</option>
-                                <option value="out">Out of Stock</option>
-                            </select>
+
+                <!-- Products Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📦 Product List</h3>
+                        <span id="productCount" class="badge badge-ready">0 Products</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Product Name</th>
+                                        <th>Category</th>
+                                        <th>Total Stock</th>
+                                        <th>Reorder Level</th>
+                                        <th>Unit</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    <tr>
+                                        <td colspan="8" style="text-align: center;">
+                                            <div class="spinner"></div>
+                                            Loading products...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Products Table -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>📦 Product List</h3>
-                    <span id="productCount" class="badge badge-ready">0 Products</span>
+            <div id="locator-view" style="display: none;">
+                <!-- Locator Filters -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📍 Find Inventory Locations</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="filters">
+                            <div class="filter-group">
+                                <label>Search Product/SKU</label>
+                                <input type="text" id="locatorSearchInput" placeholder="Search product..." onkeyup="filterLocator()">
+                            </div>
+                            <div class="filter-group">
+                                <label>Warehouse</label>
+                                <select id="locatorWarehouseFilter" onchange="filterLocator()">
+                                    <option value="">All Warehouses</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Location</label>
+                                <input type="text" id="locatorLocationInput" placeholder="Search location..." onkeyup="filterLocator()">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>SKU</th>
-                                    <th>Product Name</th>
-                                    <th>Category</th>
-                                    <th>Total Stock</th>
-                                    <th>Reorder Level</th>
-                                    <th>Unit</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="productsTableBody">
-                                <tr>
-                                    <td colspan="8" style="text-align: center;">
-                                        <div class="spinner"></div>
-                                        Loading products...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                <!-- Locator Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🏢 Stock by Location</h3>
+                        <span id="locatorCount" class="badge badge-ready">0 Locations</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Product Name</th>
+                                        <th>Warehouse</th>
+                                        <th>Location</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="locatorTableBody">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center;">
+                                            <div class="spinner"></div>
+                                            Loading locations...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -172,10 +244,44 @@
         </div>
     </div>
 
+    <!-- Edit Product Modal -->
+    <div class="modal" id="editProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Edit Product</h3>
+                <button class="close-modal" onclick="closeModal('editProductModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm" onsubmit="handleEditProduct(event)">
+                    <input type="hidden" name="product_id" id="editProductId">
+                    <div class="form-group">
+                        <label>Product Name *</label>
+                        <input type="text" name="product_name" id="editProductName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category_id" id="editModalCategorySelect">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reorder Level</label>
+                        <input type="number" name="reorder_level" id="editReorderLevel" min="0">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('editProductModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/api.js"></script>
     <script src="/js/theme.js"></script>
     <script>
         let allProducts = [];
+        let allLocations = [];
         let categories = [];
 
         async function loadProducts() {
@@ -197,8 +303,13 @@
         async function loadCategories() {
             try {
                 categories = await getCategories();
-                const selects = [document.getElementById('categoryFilter'), document.getElementById('modalCategorySelect')];
+                const selects = [
+                    document.getElementById('categoryFilter'), 
+                    document.getElementById('modalCategorySelect'),
+                    document.getElementById('editModalCategorySelect')
+                ];
                 selects.forEach(select => {
+                    if (!select) return;
                     categories.forEach(cat => {
                         const option = document.createElement('option');
                         option.value = cat.category_id;
@@ -225,7 +336,7 @@
                                   product.total_stock <= product.reorder_level ? 'badge-waiting' : 'badge-done';
                 
                 return `
-                    <tr onclick="viewProduct(${product.product_id})">
+                    <tr>
                         <td><strong>${product.sku}</strong></td>
                         <td>${product.product_name}</td>
                         <td>${product.category_name || 'N/A'}</td>
@@ -290,11 +401,125 @@
         }
 
         function viewProduct(id) {
-            window.location.href = `/product-details.html?id=${id}`;
+            // Not implemented, open edit instead
+            editProduct(id);
         }
 
         function editProduct(id) {
-            showToast('Edit functionality coming soon!', 'info');
+            const product = allProducts.find(p => p.product_id === id);
+            if (!product) return;
+            document.getElementById('editProductId').value = product.product_id;
+            document.getElementById('editProductName').value = product.product_name;
+            document.getElementById('editModalCategorySelect').value = product.category_id || '';
+            document.getElementById('editReorderLevel').value = product.reorder_level || 0;
+            openModal('editProductModal');
+        }
+
+        async function handleEditProduct(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+            const id = data.product_id;
+            
+            try {
+                // Ensure empty category_id is undefined/null so API doesn't fail
+                if (!data.category_id) delete data.category_id;
+                
+                await updateProduct(id, data);
+                showToast('Product updated successfully!', 'success');
+                closeModal('editProductModal');
+                loadProducts();
+            } catch (error) {
+                showToast('Error updating product: ' + error.message, 'error');
+            }
+        }
+
+        // Tab switching logic
+        function switchTab(tab) {
+            if (tab === 'products') {
+                document.getElementById('products-view').style.display = 'block';
+                document.getElementById('locator-view').style.display = 'none';
+                document.getElementById('tab-products').style.borderBottomColor = '#2563EB';
+                document.getElementById('tab-products').style.color = '#2563EB';
+                document.getElementById('tab-locator').style.borderBottomColor = 'transparent';
+                document.getElementById('tab-locator').style.color = '#64748b';
+            } else {
+                document.getElementById('products-view').style.display = 'none';
+                document.getElementById('locator-view').style.display = 'block';
+                document.getElementById('tab-locator').style.borderBottomColor = '#2563EB';
+                document.getElementById('tab-locator').style.color = '#2563EB';
+                document.getElementById('tab-products').style.borderBottomColor = 'transparent';
+                document.getElementById('tab-products').style.color = '#64748b';
+                
+                if (allLocations.length === 0) {
+                    loadLocations();
+                }
+            }
+        }
+
+        async function loadLocations() {
+            try {
+                const locations = await getProductLocations();
+                allLocations = locations;
+                
+                // Populate warehouse filter
+                const warehouses = [...new Set(locations.map(l => l.warehouse_name))].sort();
+                const warehouseSelect = document.getElementById('locatorWarehouseFilter');
+                warehouseSelect.innerHTML = '<option value="">All Warehouses</option>';
+                warehouses.forEach(w => {
+                    const option = document.createElement('option');
+                    option.value = w;
+                    option.textContent = w;
+                    warehouseSelect.appendChild(option);
+                });
+
+                displayLocations(locations);
+            } catch (error) {
+                console.error('Error loading locations:', error);
+                document.getElementById('locatorTableBody').innerHTML = `
+                    <tr><td colspan="5" style="text-align: center; color: var(--danger);">
+                        Error loading locations: ${error.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        function displayLocations(locations) {
+            const tbody = document.getElementById('locatorTableBody');
+            if (locations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No inventory found</td></tr>';
+                document.getElementById('locatorCount').textContent = '0 Locations';
+                return;
+            }
+
+            tbody.innerHTML = locations.map(loc => `
+                <tr>
+                    <td><strong>${loc.sku}</strong></td>
+                    <td>${loc.product_name}</td>
+                    <td>${loc.warehouse_name}</td>
+                    <td><span class="badge badge-waiting">${loc.location_name}</span></td>
+                    <td><strong>${formatNumber(loc.quantity)}</strong></td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('locatorCount').textContent = `${locations.length} Locations`;
+        }
+
+        function filterLocator() {
+            const search = document.getElementById('locatorSearchInput').value.toLowerCase();
+            const warehouse = document.getElementById('locatorWarehouseFilter').value;
+            const locationSearch = document.getElementById('locatorLocationInput').value.toLowerCase();
+
+            let filtered = allLocations.filter(loc => {
+                const matchesSearch = loc.product_name.toLowerCase().includes(search) || 
+                                    loc.sku.toLowerCase().includes(search);
+                const matchesWarehouse = !warehouse || loc.warehouse_name === warehouse;
+                const matchesLocation = !locationSearch || loc.location_name.toLowerCase().includes(locationSearch);
+
+                return matchesSearch && matchesWarehouse && matchesLocation;
+            });
+
+            displayLocations(filtered);
         }
 
         // Load user info

@@ -1,6 +1,6 @@
 const express = require('express');
 const { query, callProcedure } = require('../config/database');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -9,6 +9,16 @@ router.get('/products/low-stock', authMiddleware, async (req, res) => {
     try {
         const products = await query('SELECT * FROM v_low_stock_products LIMIT 50');
         res.json(products);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get product stock by location (MUST be before /products/:id)
+router.get('/products/locations', authMiddleware, async (req, res) => {
+    try {
+        const locations = await query('SELECT * FROM v_product_stock_by_location');
+        res.json(locations);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

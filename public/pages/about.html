@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - StockMaster</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .about-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .about-card h3 {
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .about-card p {
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .role-admin { background: #dc2626; color: white; }
+        .role-manager { background: var(--warning); color: white; }
+        .role-clerk { background: var(--primary); color: white; }
+        .role-worker { background: var(--success); color: white; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📦 StockMaster</h1>
+                <p id="userFullName">Loading...</p>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
+                    <li class="nav-item"><a href="/products.html" class="nav-link">📦 Products</a></li>
+                    <li class="nav-item"><a href="/receipts.html" class="nav-link">📥 Receipts</a></li>
+                    <li class="nav-item"><a href="/deliveries.html" class="nav-link">📤 Deliveries</a></li>
+                    <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
+                    <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
+                    <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item" id="nav-employees" style="display:none;"><a href="/employees.html" class="nav-link">👥 Employees</a></li>
+                    <li class="nav-item"><a href="/about.html" class="nav-link active">ℹ️ About</a></li>
+                    <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <h2>ℹ️ About StockMaster IMS</h2>
+                <div class="user-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-role" id="userRole">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-header">
+                    <h3>Application Sections Guide</h3>
+                </div>
+                <div class="card-body">
+                    <div class="about-grid">
+                        <div class="about-card">
+                            <h3>📊 Dashboard</h3>
+                            <p>Get a high-level overview of system metrics, pending tasks, recent inventory movements, and low stock alerts.</p>
+                        </div>
+                        <div class="about-card">
+                            <h3>📦 Products</h3>
+                            <p>Manage the product catalog, create new items, organize items by tags, and view consolidated inventory levels.</p>
+                        </div>
+                        <div class="about-card">
+                            <h3>📥 Receipts</h3>
+                            <p>Manage inbound orders from suppliers. Track expected deliveries, record physical item reception into the warehouse, and finalize shipments.</p>
+                        </div>
+                        <div class="about-card">
+                            <h3>📤 Deliveries</h3>
+                            <p>Manage outbound customer orders. Pick items from the warehouse and record fulfilled orders.</p>
+                        </div>
+                        <div class="about-card">
+                            <h3>🔄 Transfers</h3>
+                            <p>Move stock between different warehouses or sub-sections to ensure inventory is correctly placed.</p>
+                        </div>
+                        <div class="about-card">
+                            <h3>⚙️ Adjustments</h3>
+                            <p>Correct inventory discrepancies found during audits (e.g. damaged goods, miscounts). Includes strict variance tracking.</p>
+                        </div>
+                        <div class="about-card">
+                            <h3>📋 Move History</h3>
+                            <p>A complete, immutable audit trail of every single inventory transaction in the system.</p>
+                        </div>
+                        <div class="about-card">
+                            <h3>👥 Employees</h3>
+                            <p>Admin panel to manage user accounts, assign roles, and activate/deactivate staff.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Role Access Control (RBAC)</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 1rem; color: var(--text-muted);">StockMaster enforces strict security rules. Your assigned role determines what actions you can perform.</p>
+                    <div class="about-grid">
+                        <div class="about-card">
+                            <span class="role-badge role-admin">ADMIN</span>
+                            <h3>System Administrator</h3>
+                            <p>Full unrestricted access to all features. The only role that can manage employee accounts, assign roles, and override transaction restrictions.</p>
+                        </div>
+                        <div class="about-card">
+                            <span class="role-badge role-manager">MANAGER</span>
+                            <h3>Inventory Manager</h3>
+                            <p>Can approve stock adjustments, cancel orders, and oversee all warehouse operations. Cannot create or modify employee accounts.</p>
+                        </div>
+                        <div class="about-card">
+                            <span class="role-badge role-clerk">INVENTORY_CLERK</span>
+                            <h3>Inventory Clerk</h3>
+                            <p>Responsible for data entry and purchase/sales orders. Can create Receipts and Deliveries in DRAFT mode and confirm them to WAITING, but cannot physically receive goods.</p>
+                        </div>
+                        <div class="about-card">
+                            <span class="role-badge role-worker">WAREHOUSE_WORKER</span>
+                            <h3>Warehouse Worker</h3>
+                            <p>Responsible for physical stock handling. Can perform Transfers, record physical received/delivered quantities, and mark orders as READY or DONE. Cannot create new orders or cancel them.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        // Load user info
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('userFullName').textContent = user.full_name;
+            document.getElementById('userName').textContent = user.full_name;
+            document.getElementById('userRole').textContent = user.role_name || 'ADMIN';
+        }
+    </script>
+</body>
+</html>

@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { query } = require('../config/database');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -12,7 +12,8 @@ function generateToken(user) {
         {
             user_id: user.user_id,
             email: user.email,
-            role_id: user.role_id
+            role_id: user.role_id,
+            role_name: user.role_name
         },
         process.env.SECRET_KEY || 'dev-secret-key',
         { expiresIn: '24h' }
@@ -22,10 +23,14 @@ function generateToken(user) {
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, full_name, role_id = 2 } = req.body;
+        const { email, password, full_name, role_id = 4 } = req.body;
 
         if (!email || !password || !full_name) {
             return res.status(400).json({ error: 'Missing required fields' });
+        }
+        
+        if (parseInt(role_id) === 1) {
+            return res.status(403).json({ error: 'Cannot register an ADMIN account.' });
         }
 
         // Hash password
@@ -203,6 +208,57 @@ router.get('/profile', authMiddleware, async (req, res) => {
         }
 
         res.json(users[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update profile (Name only)
+router.put('/update-profile', authMiddleware, async (req, res) => {
+    try {
+        const { full_name } = req.body;
+        if (!full_name) {
+            return res.status(400).json({ error: 'Full name is required' });
+        }
+        
+        const users = await query('SELECT full_name FROM users WHERE user_id = ?', [req.user.user_id]);
+        if (users.length > 0 && users[0].full_name === full_name) {
+            return res.status(400).json({ error: 'New name cannot be the same as the current name' });
+        }
+        
+        await query('UPDATE users SET full_name = ? WHERE user_id = ?', [full_name, req.user.user_id]);
+        
+        res.json({ message: 'Profile updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Change password
+router.put('/change-password', authMiddleware, async (req, res) => {
+    try {
+        const { current_password, new_password } = req.body;
+        
+        if (!current_password || !new_password) {
+            return res.status(400).json({ error: 'Both current and new passwords are required' });
+        }
+
+        if (current_password === new_password) {
+            return res.status(400).json({ error: 'New password cannot be the same as the current password' });
+        }
+
+        const users = await query('SELECT password_hash FROM users WHERE user_id = ?', [req.user.user_id]);
+        if (users.length === 0) return res.status(404).json({ error: 'User not found' });
+        
+        const isValid = await bcrypt.compare(current_password, users[0].password_hash);
+        if (!isValid) {
+            return res.status(400).json({ error: 'Incorrect current password' });
+        }
+        
+        const password_hash = await bcrypt.hash(new_password, 10);
+        await query('UPDATE users SET password_hash = ? WHERE user_id = ?', [password_hash, req.user.user_id]);
+        
+        res.json({ message: 'Password changed successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

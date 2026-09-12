@@ -22,6 +22,10 @@
                     <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
                     <li class="nav-item"><a href="/adjustments.html" class="nav-link active">⚙️ Adjustments</a></li>
                     <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item" id="nav-employees" style="display:none;"><a href="/employees.html" class="nav-link">👥 Employees</a></li>
+                    <li class="nav-item">
+                        <a href="/about.html" class="nav-link">ℹ️ About</a>
+                    </li>
                     <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
                     <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
                 </ul>
@@ -31,11 +35,9 @@
         <main class="main-content">
             <div class="top-bar">
                 <h2>⚙️ Stock Adjustments</h2>
-                <div class="user-menu">
-                    <div class="user-info">
-                        <div class="user-name" id="userName">Admin User</div>
-                        <div class="user-role" id="userRole">Administrator</div>
-                    </div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Admin User</div>
+                    <div class="user-role" id="userRole">Administrator</div>
                 </div>
             </div>
 
@@ -44,20 +46,12 @@
                     <div class="kpi-label">Total Adjustments</div>
                     <div class="kpi-value" id="totalAdjustments">0</div>
                 </div>
-                <div class="kpi-card danger">
-                    <div class="kpi-label">Negative Adjustments</div>
-                    <div class="kpi-value" id="negativeAdjustments">0</div>
-                </div>
-                <div class="kpi-card success">
-                    <div class="kpi-label">Positive Adjustments</div>
-                    <div class="kpi-value" id="positiveAdjustments">0</div>
-                </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
                     <h3>📋 Adjustment List</h3>
-                    <button class="btn btn-primary btn-sm" onclick="showToast('Create adjustment coming soon!', 'info')">+ New Adjustment</button>
+                    <button class="btn btn-primary btn-sm" onclick="openModal('createAdjustmentModal')">+ New Adjustment</button>
                 </div>
                 <div class="card-body">
                     <div class="table-container">
@@ -67,15 +61,14 @@
                                     <th>Adjustment #</th>
                                     <th>Product</th>
                                     <th>Location</th>
-                                    <th>Before</th>
-                                    <th>Counted</th>
-                                    <th>Difference</th>
                                     <th>Reason</th>
-                                    <th>Date</th>
+                                    <th>Diff</th>
+                                    <th>Created By</th>
+                                    <th>Notes</th>
                                 </tr>
                             </thead>
                             <tbody id="adjustmentsTableBody">
-                                <tr><td colspan="8" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                                <tr><td colspan="7" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -84,52 +77,164 @@
         </main>
     </div>
 
+    <!-- Create Adjustment Modal -->
+    <div class="modal" id="createAdjustmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>+ New Adjustment</h3>
+                <button class="close-modal" onclick="closeModal('createAdjustmentModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createAdjustmentForm" onsubmit="handleCreateAdjustment(event)">
+                    <div class="form-group">
+                        <label>Adjustment Number (Optional)</label>
+                        <input type="text" name="adjustment_number">
+                    </div>
+                    <div class="form-group">
+                        <label>Product *</label>
+                        <select name="product_id" id="adjProductSelect" required>
+                            <option value="">Select Product</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Warehouse *</label>
+                            <select id="adjWarehouseSelect" required onchange="loadLocationsForWarehouse(this.value, 'adjLocationSelect')">
+                                <option value="">Select Warehouse</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Location *</label>
+                            <select name="location_id" id="adjLocationSelect" required>
+                                <option value="">Select Location</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Quantity Counted *</label>
+                            <input type="number" name="quantity_counted" required min="0">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Reason *</label>
+                            <select name="reason" required>
+                                <option value="PHYSICAL_COUNT">Physical Count</option>
+                                <option value="LOST">Shrinkage / Loss</option>
+                                <option value="FOUND">Found</option>
+                                <option value="DAMAGED">Damaged</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2"></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('createAdjustmentModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Execute Adjustment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/api.js"></script>
     <script src="/js/theme.js"></script>
     <script>
+        async function init() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.full_name;
+                document.getElementById('userRole').textContent = user.role_name;
+                document.getElementById('userFullName').textContent = user.full_name;
+            }
+
+            try {
+                const allWarehouses = await getWarehouses();
+                const w1 = document.getElementById('adjWarehouseSelect');
+                allWarehouses.forEach(w => {
+                    w1.add(new Option(w.warehouse_name, w.warehouse_id));
+                });
+
+                const allProducts = await getProducts();
+                const pSelect = document.getElementById('adjProductSelect');
+                allProducts.forEach(p => {
+                    pSelect.add(new Option(`${p.sku} - ${p.product_name}`, p.product_id));
+                });
+
+                await loadAdjustments();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function loadLocationsForWarehouse(warehouseId, selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Select Location</option>';
+            if (!warehouseId) return;
+            
+            try {
+                const locations = await getWarehouseLocations(warehouseId);
+                locations.forEach(l => {
+                    select.add(new Option(`${l.location_name} (${l.location_type})`, l.location_id));
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
         async function loadAdjustments() {
             try {
                 const adjustments = await getAdjustments();
                 document.getElementById('totalAdjustments').textContent = adjustments.length;
-                document.getElementById('negativeAdjustments').textContent = 
-                    adjustments.filter(a => a.quantity_difference < 0).length;
-                document.getElementById('positiveAdjustments').textContent = 
-                    adjustments.filter(a => a.quantity_difference > 0).length;
 
                 const tbody = document.getElementById('adjustmentsTableBody');
                 if (adjustments.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No adjustments found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No adjustments found</td></tr>';
                     return;
                 }
 
-                tbody.innerHTML = adjustments.map(a => {
-                    const diffClass = a.quantity_difference < 0 ? 'gradient-text-danger' : 'gradient-text-success';
-                    return `
-                        <tr>
-                            <td><strong>${a.adjustment_number}</strong></td>
-                            <td>${a.product_name}</td>
-                            <td>${a.warehouse_name} - ${a.location_name}</td>
-                            <td>${formatNumber(a.quantity_before)}</td>
-                            <td>${formatNumber(a.quantity_counted)}</td>
-                            <td class="${diffClass}"><strong>${a.quantity_difference > 0 ? '+' : ''}${formatNumber(a.quantity_difference)}</strong></td>
-                            <td><span class="badge badge-draft">${a.reason}</span></td>
-                            <td>${formatDate(a.created_at)}</td>
-                        </tr>
-                    `;
-                }).join('');
+                tbody.innerHTML = adjustments.map(a => `
+                    <tr>
+                        <td><strong>${a.adjustment_number}</strong></td>
+                        <td>${a.product_name}</td>
+                        <td>${a.warehouse_name} - ${a.location_name}</td>
+                        <td>${a.reason}</td>
+                        <td style="color: ${a.quantity_difference < 0 ? 'var(--danger)' : (a.quantity_difference > 0 ? 'var(--success)' : 'inherit')}">
+                            ${a.quantity_difference > 0 ? '+' : ''}${a.quantity_difference}
+                        </td>
+                        <td>${a.created_by_name}</td>
+                        <td>${a.notes || '-'}</td>
+                    </tr>
+                `).join('');
             } catch (error) {
                 document.getElementById('adjustmentsTableBody').innerHTML = 
-                    `<tr><td colspan="8" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+                    `<tr><td colspan="7" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
             }
         }
 
-        const user = getCurrentUser();
-        if (user) {
-            document.getElementById('userName').textContent = user.full_name;
-            document.getElementById('userRole').textContent = user.role_name;
-            document.getElementById('userFullName').textContent = user.full_name;
+        async function handleCreateAdjustment(e) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            if(!data.adjustment_number) delete data.adjustment_number;
+
+            try {
+                await createAdjustment(data);
+                showToast('Adjustment completed successfully', 'success');
+                closeModal('createAdjustmentModal');
+                e.target.reset();
+                loadAdjustments();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
         }
-        loadAdjustments();
+
+        init();
     </script>
 </body>
 </html>

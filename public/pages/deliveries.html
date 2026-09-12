@@ -13,6 +13,7 @@
                 <h1>📦 StockMaster</h1>
                 <p id="userFullName">Loading...</p>
             </div>
+            
             <nav>
                 <ul class="nav-menu">
                     <li class="nav-item"><a href="/dashboard.html" class="nav-link">📊 Dashboard</a></li>
@@ -22,6 +23,10 @@
                     <li class="nav-item"><a href="/transfers.html" class="nav-link">🔄 Transfers</a></li>
                     <li class="nav-item"><a href="/adjustments.html" class="nav-link">⚙️ Adjustments</a></li>
                     <li class="nav-item"><a href="/movements.html" class="nav-link">📋 Move History</a></li>
+                    <li class="nav-item" id="nav-employees" style="display:none;"><a href="/employees.html" class="nav-link">👥 Employees</a></li>
+                    <li class="nav-item">
+                        <a href="/about.html" class="nav-link">ℹ️ About</a>
+                    </li>
                     <li class="nav-item"><a href="/settings.html" class="nav-link">⚙️ Settings</a></li>
                     <li class="nav-item"><a href="#" class="nav-link" onclick="logout()">🚪 Logout</a></li>
                 </ul>
@@ -30,15 +35,14 @@
 
         <main class="main-content">
             <div class="top-bar">
-                <h2>📤 Outgoing Deliveries</h2>
-                <div class="user-menu">
-                    <div class="user-info">
-                        <div class="user-name" id="userName">Admin User</div>
-                        <div class="user-role" id="userRole">Administrator</div>
-                    </div>
+                <h2>📤 Outbound Deliveries</h2>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Admin User</div>
+                    <div class="user-role" id="userRole">Administrator</div>
                 </div>
             </div>
 
+            <!-- Stats -->
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <div class="kpi-label">Total Deliveries</div>
@@ -54,10 +58,37 @@
                 </div>
             </div>
 
+            <!-- Filters -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 Filter Deliveries</h3>
+                    <button class="btn btn-primary btn-sm" onclick="openModal('createDeliveryModal')">+ New Delivery</button>
+                </div>
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="statusFilter" onchange="filterDeliveries()">
+                                <option value="">All Status</option>
+                                <option value="DRAFT">Draft</option>
+                                <option value="WAITING">Waiting</option>
+                                <option value="READY">Ready</option>
+                                <option value="DONE">Done</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Search</label>
+                            <input type="text" id="searchInput" placeholder="Search by delivery number or customer..." onkeyup="filterDeliveries()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deliveries Table -->
             <div class="card">
                 <div class="card-header">
                     <h3>📋 Delivery List</h3>
-                    <button class="btn btn-primary btn-sm" onclick="showToast('Create delivery coming soon!', 'info')">+ New Delivery</button>
                 </div>
                 <div class="card-body">
                     <div class="table-container">
@@ -70,11 +101,17 @@
                                     <th>Scheduled Date</th>
                                     <th>Status</th>
                                     <th>Items</th>
+                                    <th>Created By</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="deliveriesTableBody">
-                                <tr><td colspan="7" style="text-align: center;"><div class="spinner"></div> Loading...</td></tr>
+                                <tr>
+                                    <td colspan="8" style="text-align: center;">
+                                        <div class="spinner"></div>
+                                        Loading deliveries...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -83,48 +120,379 @@
         </main>
     </div>
 
+    <!-- Create Delivery Modal -->
+    <div class="modal" id="createDeliveryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>+ New Delivery</h3>
+                <button class="close-modal" onclick="closeModal('createDeliveryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createDeliveryForm" onsubmit="handleCreateDelivery(event)">
+                    <div class="form-group">
+                        <label>Delivery Number (Optional)</label>
+                        <input type="text" name="delivery_number">
+                    </div>
+                    <div class="form-group">
+                        <label>Customer Name *</label>
+                        <input type="text" name="customer_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Warehouse *</label>
+                        <select name="warehouse_id" id="createWarehouseSelect" required onchange="loadLocationsForWarehouse(this.value, 'createLocationSelect')">
+                            <option value="">Select Warehouse</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Location *</label>
+                        <select name="location_id" id="createLocationSelect" required>
+                            <option value="">Select Location</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Scheduled Date</label>
+                        <input type="date" name="scheduled_date">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('createDeliveryModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Create Delivery</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View/Edit Delivery Modal -->
+    <div class="modal" id="viewDeliveryModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="viewDeliveryTitle">Delivery Details</h3>
+                <button type="button" class="close-modal" onclick="closeModal('viewDeliveryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                    <div>
+                        <strong>Customer:</strong> <span id="viewCustomer"></span><br>
+                        <strong>Warehouse:</strong> <span id="viewWarehouse"></span><br>
+                        <strong>Status:</strong> <span id="viewStatus"></span><br>
+                        <strong>Notes:</strong> <span id="viewNotes"></span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-danger" id="btnCancelDelivery" onclick="handleUpdateStatus('CANCELLED')" style="display:none; margin-right: 0.5rem;">Cancel Delivery</button>
+                        <button class="btn btn-sm btn-primary" id="btnValidateDelivery" onclick="handleValidateDelivery()" style="display:none;">Validate Delivery</button>
+                    </div>
+                </div>
+                
+                <h4>Lines</h4>
+                <div class="table-container" style="margin-bottom: 1rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product SKU</th>
+                                <th>Ordered</th>
+                                <th>Delivered</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deliveryLinesBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <form id="addLineForm" onsubmit="handleAddLine(event)" style="display:none; background: var(--bg-body); padding: 1rem; border-radius: var(--radius);">
+                    <h5>Add Line Item</h5>
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex:2;">
+                            <label>Product *</label>
+                            <select name="product_id" id="addLineProductSelect" required></select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Qty Ordered *</label>
+                            <input type="number" name="quantity_ordered" required min="1">
+                        </div>
+                        <div class="form-group" style="align-self: flex-end;">
+                            <button type="submit" class="btn btn-sm btn-primary">Add Line</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deliver Line Modal -->
+    <div class="modal" id="deliverLineModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Deliver Line</h3>
+                <button type="button" class="close-modal" onclick="closeModal('deliverLineModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="deliverLineForm" onsubmit="handleDeliverLine(event)">
+                    <div class="form-group">
+                        <label>Quantity Delivered *</label>
+                        <input type="number" name="quantity_delivered" id="deliverLineQty" required min="0">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('deliverLineModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/api.js"></script>
     <script src="/js/theme.js"></script>
     <script>
-        async function loadDeliveries() {
+        let allDeliveries = [];
+        let allWarehouses = [];
+        let allProducts = [];
+        let currentDeliveryId = null;
+        let currentLineId = null;
+
+        async function init() {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('userName').textContent = user.full_name;
+                document.getElementById('userRole').textContent = user.role_name;
+                document.getElementById('userFullName').textContent = user.full_name;
+            }
+
             try {
-                const deliveries = await getDeliveries();
-                document.getElementById('totalDeliveries').textContent = deliveries.length;
-                document.getElementById('pendingDeliveries').textContent = 
-                    deliveries.filter(d => ['DRAFT', 'WAITING', 'READY'].includes(d.status)).length;
-                document.getElementById('completedDeliveries').textContent = 
-                    deliveries.filter(d => d.status === 'DONE').length;
+                allWarehouses = await getWarehouses();
+                const wSelect = document.getElementById('createWarehouseSelect');
+                allWarehouses.forEach(w => {
+                    wSelect.add(new Option(w.warehouse_name, w.warehouse_id));
+                });
 
-                const tbody = document.getElementById('deliveriesTableBody');
-                if (deliveries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No deliveries found</td></tr>';
-                    return;
-                }
+                allProducts = await getProducts();
+                const pSelect = document.getElementById('addLineProductSelect');
+                allProducts.forEach(p => {
+                    pSelect.add(new Option(`${p.sku} - ${p.product_name}`, p.product_id));
+                });
 
-                tbody.innerHTML = deliveries.map(d => `
-                    <tr>
-                        <td><strong>${d.delivery_number}</strong></td>
-                        <td>${d.customer_name}</td>
-                        <td>${d.warehouse_name}</td>
-                        <td>${formatDate(d.scheduled_date)}</td>
-                        <td>${getStatusBadge(d.status)}</td>
-                        <td>${d.line_count || 0} items</td>
-                        <td><button class="btn btn-sm btn-secondary">View</button></td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                document.getElementById('deliveriesTableBody').innerHTML = 
-                    `<tr><td colspan="7" style="text-align: center; color: var(--danger);">${error.message}</td></tr>`;
+                await loadDeliveries();
+            } catch (err) {
+                console.error(err);
+                showToast(err.message, 'error');
             }
         }
 
-        const user = getCurrentUser();
-        if (user) {
-            document.getElementById('userName').textContent = user.full_name;
-            document.getElementById('userRole').textContent = user.role_name;
-            document.getElementById('userFullName').textContent = user.full_name;
+        async function loadDeliveries() {
+            try {
+                const deliveries = await getDeliveries();
+                allDeliveries = deliveries;
+                displayDeliveries(deliveries);
+                updateStats(deliveries);
+            } catch (error) {
+                console.error('Error loading deliveries:', error);
+                document.getElementById('deliveriesTableBody').innerHTML = `
+                    <tr><td colspan="8" style="text-align: center; color: var(--danger);">
+                        ${error.message || 'Error loading deliveries'}
+                    </td></tr>
+                `;
+            }
         }
-        loadDeliveries();
+
+        function updateStats(deliveries) {
+            document.getElementById('totalDeliveries').textContent = deliveries.length;
+            document.getElementById('pendingDeliveries').textContent = 
+                deliveries.filter(d => ['DRAFT', 'WAITING', 'READY'].includes(d.status)).length;
+            document.getElementById('completedDeliveries').textContent = 
+                deliveries.filter(d => d.status === 'DONE').length;
+        }
+
+        function displayDeliveries(deliveries) {
+            const tbody = document.getElementById('deliveriesTableBody');
+            if (deliveries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No deliveries found. Create your first delivery!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = deliveries.map(delivery => `
+                <tr onclick="viewDelivery(${delivery.delivery_id})" style="cursor:pointer">
+                    <td><strong>${delivery.delivery_number}</strong></td>
+                    <td>${delivery.customer_name}</td>
+                    <td>${delivery.warehouse_name}</td>
+                    <td>${formatDate(delivery.scheduled_date)}</td>
+                    <td>${getStatusBadge(delivery.status, delivery.scheduled_date, delivery.is_delayed)}</td>
+                    <td>${delivery.line_count || 0} items</td>
+                    <td>${delivery.created_by_name}</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); viewDelivery(${delivery.delivery_id})">View</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterDeliveries() {
+            const status = document.getElementById('statusFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            let filtered = allDeliveries.filter(delivery => {
+                const matchesStatus = !status || delivery.status === status;
+                const matchesSearch = delivery.delivery_number.toLowerCase().includes(search) || 
+                                    delivery.customer_name.toLowerCase().includes(search);
+                return matchesStatus && matchesSearch;
+            });
+
+            displayDeliveries(filtered);
+        }
+
+        async function loadLocationsForWarehouse(warehouseId, selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Select Location</option>';
+            if (!warehouseId) return;
+            
+            try {
+                const locations = await getWarehouseLocations(warehouseId);
+                locations.forEach(l => {
+                    select.add(new Option(`${l.location_name} (${l.location_type})`, l.location_id));
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function handleCreateDelivery(e) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            if(!data.delivery_number) delete data.delivery_number;
+            if(!data.scheduled_date) delete data.scheduled_date;
+
+            try {
+                await createDelivery(data);
+                showToast('Delivery created', 'success');
+                closeModal('createDeliveryModal');
+                e.target.reset();
+                loadDeliveries();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function viewDelivery(id) {
+            currentDeliveryId = id;
+            try {
+                const response = await getDelivery(id);
+                const delivery = response.delivery;
+                const lines = response.lines;
+                
+                document.getElementById('viewDeliveryTitle').textContent = `Delivery ${delivery.delivery_number}`;
+                document.getElementById('viewCustomer').textContent = delivery.customer_name;
+                document.getElementById('viewWarehouse').textContent = delivery.warehouse_name;
+                document.getElementById('viewStatus').innerHTML = getStatusBadge(delivery.status, delivery.scheduled_date, delivery.is_delayed);
+                document.getElementById('viewNotes').textContent = delivery.notes || '-';
+
+                const tbody = document.getElementById('deliveryLinesBody');
+                if(!lines || lines.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">No lines added</td></tr>';
+                } else {
+                    tbody.innerHTML = lines.map(l => `
+                        <tr>
+                            <td>${l.product_name} (${l.sku})</td>
+                            <td>${l.quantity_ordered}</td>
+                            <td>${l.quantity_delivered}</td>
+                            <td>
+                                ${(delivery.status === 'WAITING' || delivery.status === 'READY') ? 
+                                    `<button type="button" class="btn btn-sm btn-secondary" onclick="openDeliverLine(${l.delivery_line_id}, ${l.quantity_delivered}, ${l.quantity_ordered})">Update Delivered</button>` 
+                                    : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                document.getElementById('addLineForm').style.display = delivery.status === 'DRAFT' ? 'block' : 'none';
+                
+                const btnValidate = document.getElementById('btnValidateDelivery');
+                const btnCancel = document.getElementById('btnCancelDelivery');
+                
+                if(delivery.status === 'DRAFT' || delivery.status === 'WAITING' || delivery.status === 'READY') {
+                    btnCancel.style.display = 'inline-flex';
+                    btnValidate.style.display = 'inline-flex';
+                    if (delivery.status === 'DRAFT') {
+                        btnValidate.textContent = 'Confirm Delivery (Ready to Pack)';
+                        btnValidate.onclick = () => handleUpdateStatus('WAITING');
+                    } else if (delivery.status === 'WAITING') {
+                        btnValidate.textContent = 'Mark as Ready';
+                        btnValidate.onclick = () => handleUpdateStatus('READY');
+                    } else if (delivery.status === 'READY') {
+                        btnValidate.textContent = 'Validate Delivery (Done)';
+                        btnValidate.onclick = handleValidateDelivery;
+                    }
+                } else {
+                    btnCancel.style.display = 'none';
+                    btnValidate.style.display = 'none';
+                }
+
+                openModal('viewDeliveryModal');
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleAddLine(e) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            try {
+                await addDeliveryLine(currentDeliveryId, data);
+                showToast('Line added', 'success');
+                e.target.reset();
+                viewDelivery(currentDeliveryId);
+                loadDeliveries();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function openDeliverLine(lineId, currentQty, orderedQty) {
+            currentLineId = lineId;
+            const input = document.getElementById('deliverLineQty');
+            input.value = currentQty;
+            input.max = orderedQty;
+            openModal('deliverLineModal');
+        }
+
+        async function handleDeliverLine(e) {
+            e.preventDefault();
+            const qty = document.getElementById('deliverLineQty').value;
+            try {
+                await updateDeliveredQuantity(currentDeliveryId, currentLineId, qty);
+                showToast('Quantity updated', 'success');
+                closeModal('deliverLineModal');
+                viewDelivery(currentDeliveryId);
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleUpdateStatus(status) {
+            try {
+                await updateDeliveryStatus(currentDeliveryId, status);
+                showToast('Status updated', 'success');
+                viewDelivery(currentDeliveryId);
+                loadDeliveries();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleValidateDelivery() {
+            try {
+                await validateDelivery(currentDeliveryId);
+                showToast('Delivery validated successfully', 'success');
+                viewDelivery(currentDeliveryId);
+                loadDeliveries();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>
