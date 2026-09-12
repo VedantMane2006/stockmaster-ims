@@ -1,16 +1,19 @@
 # StockMaster IMS
 
-A minimalist, conventional inventory management web application built with **Node.js**, **Express.js**, **MySQL 8**, and **Vanilla HTML/CSS/JavaScript**.
+A minimalist, conventional Inventory Management System built for a student project. Demonstrates a full-stack CRUD application with role-based access control, atomic database transactions, and a multi-page frontend — all without any frameworks.
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **Backend**: Node.js, Express.js
-- **Database**: MySQL 8 (`mysql2` connection pool)
-- **Authentication**: JWT (`jsonwebtoken`) + Password Hashing (`bcryptjs`)
-- **Configuration**: `dotenv`
+| Layer          | Technology                          |
+|----------------|-------------------------------------|
+| Frontend       | HTML5, CSS3, Vanilla JavaScript     |
+| Backend        | Node.js v16+, Express.js            |
+| Database       | MySQL 8.0+                          |
+| Auth           | JWT (`jsonwebtoken`) + `bcryptjs`   |
+| Configuration  | `dotenv`                            |
+| Dev Server     | `nodemon`                           |
 
 ---
 
@@ -21,68 +24,89 @@ stockmaster-ims/
 ├── config/
 │   └── database.js          # MySQL connection pool & query helpers
 ├── database/
-│   ├── procedures.sql       # Stored procedures for transaction operations
-│   ├── schema.sql           # Relational tables, constraints, and default roles
-│   └── views.sql            # Views for stock aggregation & KPI metrics
+│   ├── procedures.sql       # Stored procedures for atomic inventory operations
+│   ├── schema.sql           # All tables, constraints, and default roles
+│   ├── seed.sql             # Standalone seed file (used by init-db script)
+│   └── views.sql            # SQL views for KPIs, audit logs, and aggregations
 ├── middleware/
-│   └── auth.js              # JWT authentication middleware
+│   └── auth.js              # JWT authentication + role-based authorization
 ├── public/
 │   ├── css/
 │   │   └── style.css        # Application stylesheet
 │   ├── js/
-│   │   ├── api.js           # Fetch API helpers & token storage
-│   │   ├── auth.js          # Auth page controller
-│   │   ├── dashboard.js     # Dashboard metrics & activity loader
-│   │   └── theme.js         # Toast notifications & UI interactions
+│   │   ├── api.js           # Centralized fetch wrapper + all API helper functions
+│   │   ├── auth.js          # Login / register / password reset page controller
+│   │   ├── dashboard.js     # Dashboard metrics & activity feed loader
+│   │   └── theme.js         # Toast notifications, modal helpers, sidebar RBAC
 │   └── pages/
-│       ├── adjustments.html # Stock adjustments
+│       ├── about.html       # Application guide and role descriptions
+│       ├── adjustments.html # Stock adjustment (physical count corrections)
 │       ├── dashboard.html   # Main KPI dashboard
-│       ├── deliveries.html  # Outbound delivery orders
+│       ├── deliveries.html  # Outbound customer delivery orders
+│       ├── employees.html   # User/employee management (Admin only)
 │       ├── login.html       # Sign in, sign up, password recovery
-│       ├── movements.html   # Stock audit trail
-│       ├── products.html    # Product inventory catalog
+│       ├── movements.html   # Immutable stock audit trail
+│       ├── products.html    # Product catalog & inventory by location
 │       ├── receipts.html    # Inbound supplier receipts
-│       ├── settings.html    # Warehouse, category, and profile settings
-│       └── transfers.html   # Internal stock transfers
+│       ├── settings.html    # Warehouses, locations, categories & profile
+│       └── transfers.html   # Internal warehouse-to-warehouse stock transfers
 ├── routes/
-│   ├── adjustments.js       # Stock adjustment endpoints
-│   ├── auth.js              # Authentication endpoints
-│   ├── dashboard.js         # Dashboard stats & activity endpoints
-│   ├── deliveries.js        # Delivery order endpoints
-│   ├── products.js          # Product catalog & category endpoints
-│   ├── receipts.js          # Supplier receipt endpoints
-│   └── transfers.js         # Internal transfer endpoints
+│   ├── adjustments.js       # POST /adjustments
+│   ├── auth.js              # POST /auth/login, /register, /forgot-password, etc.
+│   ├── dashboard.js         # GET /dashboard/kpis, /warehouses, /locations
+│   ├── deliveries.js        # CRUD + lifecycle for delivery orders
+│   ├── products.js          # CRUD for products and categories
+│   ├── receipts.js          # CRUD + lifecycle for supplier receipts
+│   ├── transfers.js         # POST /transfers
+│   └── users.js             # Admin-only user management (GET/POST/PUT /users)
 ├── scripts/
-│   └── initDb.js            # Database setup & sample data seeding
-├── .env.example             # Environment variable template
+│   └── initDb.js            # One-time database setup & sample data seeding
+├── .env.example             # Environment variable template — copy this to .env
 ├── .gitignore
-├── LICENSE                  # MIT License
+├── LICENSE
 ├── package.json
+├── package-lock.json
 ├── README.md
-└── server.js                # Express entry point
+└── server.js                # Express entry point — start here
 ```
 
 ---
 
-## Getting Started
+## Dependencies
+
+**Runtime:**
+- `express` — HTTP server and routing
+- `mysql2` — MySQL client with Promise support and connection pooling
+- `jsonwebtoken` — JWT generation and verification
+- `bcryptjs` — Password hashing
+- `cors` — Cross-origin resource sharing headers
+- `dotenv` — Load `.env` file into `process.env`
+
+**Development only:**
+- `nodemon` — Auto-restart server on file changes
+
+---
+
+## Setup Instructions
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v16+)
-- [MySQL Server](https://dev.mysql.com/downloads/) (v8.0+)
+- [Node.js](https://nodejs.org/) v16 or higher
+- [MySQL Server](https://dev.mysql.com/downloads/) v8.0 or higher
 
-### 1. Installation
+### 1. Clone and Install
 ```bash
+git clone <repository-url>
+cd stockmaster-ims
 npm install
 ```
 
 ### 2. Environment Configuration
-Copy the sample environment file and configure your MySQL credentials:
 ```bash
 cp .env.example .env
 ```
-Edit `.env` with your database password:
+Open `.env` and set your MySQL credentials:
 ```ini
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=pick-a-long-random-string
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=stockmaster
@@ -92,24 +116,68 @@ PORT=5000
 NODE_ENV=development
 ```
 
-### 3. Initialize Database
-Ensure MySQL is running and the database `stockmaster` exists (or create it: `CREATE DATABASE stockmaster;`). Then run:
+---
+
+## Database Setup
+
+### 1. Create the database in MySQL
+```sql
+CREATE DATABASE stockmaster;
+```
+
+### 2. Run the init script
+This creates all tables, stored procedures, views, and seeds the initial admin user and sample warehouses/locations:
 ```bash
 npm run init-db
 ```
-This applies `schema.sql`, `procedures.sql`, `views.sql`, and seeds initial data (warehouses, locations, categories, and default admin user).
 
 **Default Admin Credentials:**
-- Email: `admin@stockmaster.com`
-- Password: `admin123`
+| Field    | Value                     |
+|----------|---------------------------|
+| Email    | `admin@stockmaster.com`   |
+| Password | `admin123`                |
 
-### 4. Run Application
+> **Note:** Change the admin password immediately after first login via **Settings → Change Password**.
+
+---
+
+## How to Start the Application
+
 ```bash
-# Production / standard start
-npm start
-
-# Development with auto-restart
+# Development (auto-restarts on changes)
 npm run dev
+
+# Production
+npm start
 ```
 
-Open `http://localhost:5000` in your browser.
+Then open: **http://localhost:5000**
+
+---
+
+## Major Features
+
+| Feature                  | Description                                                                 |
+|--------------------------|-----------------------------------------------------------------------------|
+| **Authentication**       | JWT-based login/logout with password change and OTP-based password reset    |
+| **Role-Based Access**    | 4 roles: `ADMIN`, `MANAGER`, `INVENTORY_CLERK`, `WAREHOUSE_WORKER`          |
+| **Product Management**   | Create/edit products, categories, tags, and view stock by warehouse location |
+| **Receipts (Inbound)**   | Full lifecycle: DRAFT → WAITING → READY → DONE with delayed tracking        |
+| **Deliveries (Outbound)**| Full lifecycle: DRAFT → WAITING → READY → DONE with delayed tracking        |
+| **Transfers**            | Atomic stock moves between warehouse locations                              |
+| **Adjustments**          | Correct discrepancies with reason codes (DAMAGED, LOST, FOUND, etc.)       |
+| **Audit Trail**          | Immutable `stock_movements` log for every inventory change                  |
+| **Employee Management**  | Admin can create, activate/deactivate, and re-assign roles to users         |
+| **Dashboard KPIs**       | Live summary of stock levels, pending orders, and recent activity           |
+| **About Page**           | Built-in guide explaining each module and each user role                    |
+
+---
+
+## Known Limitations
+
+- **No email delivery**: The forgot-password OTP is printed to the server console (`[DEV ONLY]` log) instead of being emailed. In production, integrate an email service such as Nodemailer + SendGrid.
+- **No file uploads**: Product images are not supported.
+- **Single database**: No replication or failover. Suitable for a single-instance deployment only.
+- **No automated tests**: There are no unit or integration tests. The application was validated manually through the RBAC test plan.
+- **Hard-coded port**: The port defaults to `5000`. Change via the `PORT` environment variable.
+- **OTP brute-force**: The OTP reset flow has no rate limiting or attempt lockout. This is acceptable for a student project but not for production.

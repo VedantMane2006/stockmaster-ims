@@ -138,8 +138,10 @@ router.post('/forgot-password', async (req, res) => {
             [otp, expiry, email]
         );
 
-        // In production, send OTP via email/SMS
-        res.json({ message: 'OTP sent', otp }); // For testing only
+        // NOTE: In production, send OTP via email or SMS instead of returning it here.
+        // For this student project, print it to the server console so it can be tested.
+        console.log(`[DEV ONLY] OTP for ${email}: ${otp}`);
+        res.json({ message: 'OTP generated. Check the server console.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
