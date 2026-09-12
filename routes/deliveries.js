@@ -221,16 +221,7 @@ router.post('/deliveries/:id/validate', authMiddleware, authorize(['ADMIN', 'MAN
         await callProcedure('sp_validate_delivery', [req.params.id, req.user.user_id]);
 
         // Persist Delayed status
-        let isDelayed = false;
-        if (del[0].scheduled_date) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const schedDate = new Date(del[0].scheduled_date);
-            schedDate.setHours(0, 0, 0, 0);
-            if (today > schedDate) {
-                isDelayed = true;
-            }
-        }
+        const isDelayed = del[0].scheduled_date ? new Date().setHours(0,0,0,0) > new Date(del[0].scheduled_date).setHours(0,0,0,0) : false;
 
         await query('UPDATE delivery_orders SET status = ?, is_delayed = ?, delivered_date = NOW() WHERE delivery_id = ?', 
                     ['DONE', isDelayed, req.params.id]);

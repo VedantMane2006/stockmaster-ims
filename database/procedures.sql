@@ -49,22 +49,15 @@ BEGIN
             LEAVE read_loop;
         END IF;
         
-        -- Retrieve current stock level at destination location
+        -- Upsert stock level
+        INSERT INTO product_locations (product_id, location_id, quantity)
+        VALUES (v_product_id, v_location_id, v_quantity_received)
+        ON DUPLICATE KEY UPDATE quantity = quantity + v_quantity_received;
+        
+        -- Retrieve new stock level for audit log
         SET v_current_qty = (SELECT quantity 
                              FROM product_locations 
                              WHERE product_id = v_product_id AND location_id = v_location_id);
-        
-        -- Upsert stock level
-        IF v_current_qty IS NULL THEN
-            INSERT INTO product_locations (product_id, location_id, quantity)
-            VALUES (v_product_id, v_location_id, v_quantity_received);
-            SET v_current_qty = v_quantity_received;
-        ELSE
-            UPDATE product_locations
-            SET quantity = quantity + v_quantity_received
-            WHERE product_id = v_product_id AND location_id = v_location_id;
-            SET v_current_qty = v_current_qty + v_quantity_received;
-        END IF;
         
         -- Append audit record to stock_movements
         INSERT INTO stock_movements (

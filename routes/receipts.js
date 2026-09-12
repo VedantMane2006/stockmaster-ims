@@ -222,16 +222,7 @@ router.post('/receipts/:id/validate', authMiddleware, authorize(['ADMIN', 'MANAG
         await callProcedure('sp_validate_receipt', [req.params.id, req.user.user_id]);
         
         // Persist Delayed status
-        let isDelayed = false;
-        if (rcp[0].scheduled_date) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const schedDate = new Date(rcp[0].scheduled_date);
-            schedDate.setHours(0, 0, 0, 0);
-            if (today > schedDate) {
-                isDelayed = true;
-            }
-        }
+        const isDelayed = rcp[0].scheduled_date ? new Date().setHours(0,0,0,0) > new Date(rcp[0].scheduled_date).setHours(0,0,0,0) : false;
 
         await query('UPDATE receipts SET status = ?, is_delayed = ?, received_date = NOW() WHERE receipt_id = ?', 
                     ['DONE', isDelayed, req.params.id]);

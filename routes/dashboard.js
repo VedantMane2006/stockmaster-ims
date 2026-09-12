@@ -18,7 +18,7 @@ router.get('/dashboard/kpis', authMiddleware, async (req, res) => {
 router.get('/dashboard/recent-activity', authMiddleware, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 20;
-        const activity = await query(`SELECT * FROM v_recent_activity LIMIT ${limit}`);
+        const activity = await query('SELECT * FROM v_recent_activity LIMIT ?', [limit]);
         res.json(activity);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -48,7 +48,8 @@ router.get('/dashboard/stock-movements', authMiddleware, async (req, res) => {
             params.push(movement_type);
         }
         
-        sql += ` ORDER BY created_at DESC LIMIT ${parseInt(limit)}`;
+        sql += ' ORDER BY created_at DESC LIMIT ?';
+        params.push(parseInt(limit));
         
         const movements = await query(sql, params);
         res.json(movements);
