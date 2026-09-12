@@ -89,9 +89,9 @@ async function initializeDatabase() {
         console.log('✅ Connected to database');
         
         // Execute SQL files
-        await executeSqlFile(connection, path.join(__dirname, '../database/schema_mysql.sql'));
-        await executeSqlFile(connection, path.join(__dirname, '../database/procedures_mysql.sql'));
-        await executeSqlFile(connection, path.join(__dirname, '../database/views_mysql.sql'));
+        await executeSqlFile(connection, path.join(__dirname, '../database/schema.sql'));
+        await executeSqlFile(connection, path.join(__dirname, '../database/procedures.sql'));
+        await executeSqlFile(connection, path.join(__dirname, '../database/views.sql'));
         
         // Insert sample data
         console.log('📝 Inserting sample data...');

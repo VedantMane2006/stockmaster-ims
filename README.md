@@ -1,59 +1,115 @@
-# StockMaster - Inventory Management System
+# StockMaster IMS
 
-A modular, real-time inventory management system built with Node.js, Express.js and MySQL.
+A minimalist, conventional inventory management web application built with **Node.js**, **Express.js**, **MySQL 8**, and **Vanilla HTML/CSS/JavaScript**.
 
-## Features
-- Real-time inventory tracking
-- Multi-warehouse support
-- Receipt & delivery management
-- Internal transfers
-- Stock adjustments
-- Low stock alerts
-- Comprehensive audit trail
+---
 
 ## Tech Stack
-- Backend: Node.js + Express.js
-- Database: MySQL 8.0
-- Frontend: HTML5, CSS3, Vanilla JavaScript
-- UI Framework: Custom CSS (Responsive)
 
-## Setup Instructions
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **Backend**: Node.js, Express.js
+- **Database**: MySQL 8 (`mysql2` connection pool)
+- **Authentication**: JWT (`jsonwebtoken`) + Password Hashing (`bcryptjs`)
+- **Configuration**: `dotenv`
+
+---
+
+## Directory Structure
+
+```
+stockmaster-ims/
+├── config/
+│   └── database.js          # MySQL connection pool & query helpers
+├── database/
+│   ├── procedures.sql       # Stored procedures for transaction operations
+│   ├── schema.sql           # Relational tables, constraints, and default roles
+│   └── views.sql            # Views for stock aggregation & KPI metrics
+├── middleware/
+│   └── auth.js              # JWT authentication middleware
+├── public/
+│   ├── css/
+│   │   └── style.css        # Application stylesheet
+│   ├── js/
+│   │   ├── api.js           # Fetch API helpers & token storage
+│   │   ├── auth.js          # Auth page controller
+│   │   ├── dashboard.js     # Dashboard metrics & activity loader
+│   │   └── theme.js         # Toast notifications & UI interactions
+│   └── pages/
+│       ├── adjustments.html # Stock adjustments
+│       ├── dashboard.html   # Main KPI dashboard
+│       ├── deliveries.html  # Outbound delivery orders
+│       ├── login.html       # Sign in, sign up, password recovery
+│       ├── movements.html   # Stock audit trail
+│       ├── products.html    # Product inventory catalog
+│       ├── receipts.html    # Inbound supplier receipts
+│       ├── settings.html    # Warehouse, category, and profile settings
+│       └── transfers.html   # Internal stock transfers
+├── routes/
+│   ├── adjustments.js       # Stock adjustment endpoints
+│   ├── auth.js              # Authentication endpoints
+│   ├── dashboard.js         # Dashboard stats & activity endpoints
+│   ├── deliveries.js        # Delivery order endpoints
+│   ├── products.js          # Product catalog & category endpoints
+│   ├── receipts.js          # Supplier receipt endpoints
+│   └── transfers.js         # Internal transfer endpoints
+├── scripts/
+│   └── initDb.js            # Database setup & sample data seeding
+├── .env.example             # Environment variable template
+├── .gitignore
+├── LICENSE                  # MIT License
+├── package.json
+├── README.md
+└── server.js                # Express entry point
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Node.js 16+ and npm
-- MySQL 8.0+
+- [Node.js](https://nodejs.org/) (v16+)
+- [MySQL Server](https://dev.mysql.com/downloads/) (v8.0+)
 
-### Installation
-1. Install dependencies: `npm install`
-2. Configure database in `.env`
-3. Initialize database: `npm run init-db`
-4. Run application: `npm start`
+### 1. Installation
+```bash
+npm install
+```
 
-## Project Structure
+### 2. Environment Configuration
+Copy the sample environment file and configure your MySQL credentials:
+```bash
+cp .env.example .env
 ```
-StockMaster/
-├── app.py                 # Main Flask application
-├── config.py              # Configuration
-├── requirements.txt       # Python dependencies
-├── database/
-│   ├── schema_mysql.sql      # MySQL database schema
-│   ├── procedures_mysql.sql  # MySQL stored procedures
-│   └── views_mysql.sql       # MySQL database views
-├── backend/
-│   ├── models.py         # Database models
-│   ├── auth.py           # Authentication logic
-│   └── routes/
-│       ├── products.py
-│       ├── receipts.py
-│       ├── deliveries.py
-│       ├── transfers.py
-│       └── adjustments.py
-└── frontend/
-    ├── static/
-    │   ├── css/
-    │   └── js/
-    └── templates/
-        ├── login.html
-        ├── dashboard.html
-        └── ...
+Edit `.env` with your database password:
+```ini
+SECRET_KEY=your-secret-key-here
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=stockmaster
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+PORT=5000
+NODE_ENV=development
 ```
+
+### 3. Initialize Database
+Ensure MySQL is running and the database `stockmaster` exists (or create it: `CREATE DATABASE stockmaster;`). Then run:
+```bash
+npm run init-db
+```
+This applies `schema.sql`, `procedures.sql`, `views.sql`, and seeds initial data (warehouses, locations, categories, and default admin user).
+
+**Default Admin Credentials:**
+- Email: `admin@stockmaster.com`
+- Password: `admin123`
+
+### 4. Run Application
+```bash
+# Production / standard start
+npm start
+
+# Development with auto-restart
+npm run dev
+```
+
+Open `http://localhost:5000` in your browser.

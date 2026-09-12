@@ -19,9 +19,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
-app.use('/css', express.static(path.join(__dirname, 'frontend/static/css')));
-app.use('/js', express.static(path.join(__dirname, 'frontend/static/js')));
+// Serve static assets (CSS, JS)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -34,11 +33,11 @@ app.use('/api', dashboardRoutes);
 
 // Serve HTML pages
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/templates/login.html'));
+    res.sendFile(path.join(__dirname, 'public/pages/login.html'));
 });
 
-app.get('/*.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/templates', req.params[0] + '.html'));
+app.get('/:page.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/pages', `${req.params.page}.html`));
 });
 
 // Error handling middleware
