@@ -78,7 +78,7 @@ router.post('/products', authMiddleware, async (req, res) => {
         
         const result = await query(
             'INSERT INTO products (sku, product_name, category_id, unit_of_measure, reorder_level) VALUES (?, ?, ?, ?, ?)',
-            [sku, product_name, category_id, unit_of_measure, reorder_level]
+            [sku, product_name, category_id ?? null, unit_of_measure, reorder_level ?? 0]
         );
         
         res.status(201).json({
@@ -97,7 +97,7 @@ router.put('/products/:id', authMiddleware, async (req, res) => {
         
         const result = await query(
             'UPDATE products SET product_name = ?, category_id = ?, reorder_level = ? WHERE product_id = ?',
-            [product_name, category_id, reorder_level, req.params.id]
+            [product_name, category_id ?? null, reorder_level ?? 0, req.params.id]
         );
         
         if (result.affectedRows === 0) {
@@ -123,15 +123,15 @@ router.get('/categories', authMiddleware, async (req, res) => {
 // Create category
 router.post('/categories', authMiddleware, async (req, res) => {
     try {
-        const { category_name, parent_category_id, description } = req.body;
+        const { category_name, description } = req.body;
         
         if (!category_name) {
             return res.status(400).json({ error: 'Category name required' });
         }
         
         const result = await query(
-            'INSERT INTO categories (category_name, parent_category_id, description) VALUES (?, ?, ?)',
-            [category_name, parent_category_id, description]
+            'INSERT INTO categories (category_name, description) VALUES (?, ?)',
+            [category_name, description ?? null]
         );
         
         res.status(201).json({ message: 'Category created' });

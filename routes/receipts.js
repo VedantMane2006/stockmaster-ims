@@ -71,7 +71,7 @@ router.post('/receipts', authMiddleware, async (req, res) => {
         
         const result = await query(
             'INSERT INTO receipts (receipt_number, supplier_name, warehouse_id, location_id, scheduled_date, created_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [receipt_number, supplier_name, warehouse_id, location_id, scheduled_date, req.user.user_id, notes]
+            [receipt_number, supplier_name, warehouse_id, location_id, scheduled_date ?? null, req.user.user_id, notes ?? null]
         );
         
         const receipt_id = result.insertId;

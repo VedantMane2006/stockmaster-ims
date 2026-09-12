@@ -63,7 +63,7 @@ router.post('/adjustments', authMiddleware, async (req, res) => {
             quantity_counted,
             reason,
             req.user.user_id,
-            notes
+            notes ?? null
         ]);
         
         res.status(201).json({ message: 'Adjustment created' });

@@ -71,7 +71,7 @@ router.post('/deliveries', authMiddleware, async (req, res) => {
         
         const result = await query(
             'INSERT INTO delivery_orders (delivery_number, customer_name, warehouse_id, location_id, scheduled_date, created_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [delivery_number, customer_name, warehouse_id, location_id, scheduled_date, req.user.user_id, notes]
+            [delivery_number, customer_name, warehouse_id, location_id, scheduled_date ?? null, req.user.user_id, notes ?? null]
         );
         
         const delivery_id = result.insertId;

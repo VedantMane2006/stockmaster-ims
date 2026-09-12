@@ -67,7 +67,7 @@ router.post('/transfers', authMiddleware, async (req, res) => {
             to_location_id,
             quantity,
             req.user.user_id,
-            notes
+            notes ?? null
         ]);
         
         res.status(201).json({ message: 'Transfer completed' });

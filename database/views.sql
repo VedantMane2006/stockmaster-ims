@@ -1,11 +1,16 @@
--- Database Views for MySQL
+-- ============================================================================
+-- StockMaster IMS — Database Views
+-- Database: MySQL 8.0+
+-- Description: Aggregated queries for UI presentation and dashboard KPIs
+-- ============================================================================
 
--- Product list with category and total stock
+-- 1. Product list with category name and aggregated total stock
 CREATE OR REPLACE VIEW v_products_with_stock AS
 SELECT 
     p.product_id,
     p.sku,
     p.product_name,
+    p.category_id,
     c.category_name,
     p.unit_of_measure,
     p.reorder_level,
@@ -15,11 +20,11 @@ SELECT
 FROM products p
 LEFT JOIN categories c ON p.category_id = c.category_id
 LEFT JOIN product_locations pl ON p.product_id = pl.product_id
-GROUP BY p.product_id, p.sku, p.product_name, c.category_name, 
+GROUP BY p.product_id, p.sku, p.product_name, p.category_id, c.category_name, 
          p.unit_of_measure, p.reorder_level, p.is_active, p.created_at
 ORDER BY p.product_name;
 
--- Low stock products
+-- 2. Low stock alert products (total stock <= reorder level)
 CREATE OR REPLACE VIEW v_low_stock_products AS
 SELECT 
     p.product_id,
@@ -37,7 +42,7 @@ GROUP BY p.product_id, p.sku, p.product_name, c.category_name, p.reorder_level
 HAVING COALESCE(SUM(pl.quantity), 0) <= p.reorder_level
 ORDER BY stock_deficit DESC;
 
--- Product stock by location
+-- 3. Product stock broken down by warehouse and location
 CREATE OR REPLACE VIEW v_product_stock_by_location AS
 SELECT 
     p.product_id,
@@ -54,7 +59,7 @@ JOIN warehouses w ON l.warehouse_id = w.warehouse_id
 WHERE pl.quantity > 0
 ORDER BY p.product_name, w.warehouse_name, l.location_name;
 
--- Receipt list with details
+-- 4. Inbound receipts list with warehouse, location, creator, and line counts
 CREATE OR REPLACE VIEW v_receipts_list AS
 SELECT 
     r.receipt_id,
@@ -68,8 +73,8 @@ SELECT
     u.full_name AS created_by_name,
     r.created_at,
     COUNT(rl.receipt_line_id) AS line_count,
-    SUM(rl.quantity_expected) AS total_expected,
-    SUM(rl.quantity_received) AS total_received
+    COALESCE(SUM(rl.quantity_expected), 0) AS total_expected,
+    COALESCE(SUM(rl.quantity_received), 0) AS total_received
 FROM receipts r
 JOIN warehouses w ON r.warehouse_id = w.warehouse_id
 JOIN locations l ON r.location_id = l.location_id
@@ -80,7 +85,7 @@ GROUP BY r.receipt_id, r.receipt_number, r.supplier_name, w.warehouse_name,
          u.full_name, r.created_at
 ORDER BY r.created_at DESC;
 
--- Receipt lines with product details
+-- 5. Receipt lines with product SKU, name, and pending quantity
 CREATE OR REPLACE VIEW v_receipt_lines_detail AS
 SELECT 
     rl.receipt_line_id,
@@ -92,13 +97,13 @@ SELECT
     p.unit_of_measure,
     rl.quantity_expected,
     rl.quantity_received,
-    rl.quantity_expected - rl.quantity_received AS quantity_pending
+    (rl.quantity_expected - rl.quantity_received) AS quantity_pending
 FROM receipt_lines rl
 JOIN receipts r ON rl.receipt_id = r.receipt_id
 JOIN products p ON rl.product_id = p.product_id
 ORDER BY rl.receipt_id, p.product_name;
 
--- Delivery order list with details
+-- 6. Outbound delivery orders with customer, warehouse, creator, and line counts
 CREATE OR REPLACE VIEW v_deliveries_list AS
 SELECT 
     d.delivery_id,
@@ -112,8 +117,8 @@ SELECT
     u.full_name AS created_by_name,
     d.created_at,
     COUNT(dl.delivery_line_id) AS line_count,
-    SUM(dl.quantity_ordered) AS total_ordered,
-    SUM(dl.quantity_delivered) AS total_delivered
+    COALESCE(SUM(dl.quantity_ordered), 0) AS total_ordered,
+    COALESCE(SUM(dl.quantity_delivered), 0) AS total_delivered
 FROM delivery_orders d
 JOIN warehouses w ON d.warehouse_id = w.warehouse_id
 JOIN locations l ON d.location_id = l.location_id
@@ -124,7 +129,7 @@ GROUP BY d.delivery_id, d.delivery_number, d.customer_name, w.warehouse_name,
          u.full_name, d.created_at
 ORDER BY d.created_at DESC;
 
--- Delivery lines with product details
+-- 7. Delivery order lines with product details and pending quantity
 CREATE OR REPLACE VIEW v_delivery_lines_detail AS
 SELECT 
     dl.delivery_line_id,
@@ -136,13 +141,13 @@ SELECT
     p.unit_of_measure,
     dl.quantity_ordered,
     dl.quantity_delivered,
-    dl.quantity_ordered - dl.quantity_delivered AS quantity_pending
+    (dl.quantity_ordered - dl.quantity_delivered) AS quantity_pending
 FROM delivery_order_lines dl
 JOIN delivery_orders d ON dl.delivery_id = d.delivery_id
 JOIN products p ON dl.product_id = p.product_id
 ORDER BY dl.delivery_id, p.product_name;
 
--- Internal transfers list
+-- 8. Internal stock transfers with source/destination warehouse and location
 CREATE OR REPLACE VIEW v_transfers_list AS
 SELECT 
     t.transfer_id,
@@ -169,7 +174,7 @@ JOIN warehouses wt ON lt.warehouse_id = wt.warehouse_id
 JOIN users u ON t.created_by = u.user_id
 ORDER BY t.created_at DESC;
 
--- Stock adjustments list
+-- 9. Stock count adjustments with difference and recorded reason
 CREATE OR REPLACE VIEW v_adjustments_list AS
 SELECT 
     sa.adjustment_id,
@@ -193,7 +198,7 @@ JOIN warehouses w ON l.warehouse_id = w.warehouse_id
 JOIN users u ON sa.created_by = u.user_id
 ORDER BY sa.created_at DESC;
 
--- Stock movement history (ledger)
+-- 10. Audit history: chronological stock movements
 CREATE OR REPLACE VIEW v_stock_movements AS
 SELECT 
     sm.movement_id,
@@ -217,22 +222,24 @@ JOIN users u ON sm.created_by = u.user_id
 ORDER BY sm.created_at DESC
 LIMIT 1000;
 
--- Dashboard summary statistics
+-- 11. Dashboard KPIs (high-level executive metrics)
+-- Fixed: Out-of-stock count uses NOT EXISTS to guarantee a scalar result
 CREATE OR REPLACE VIEW v_dashboard_kpis AS
 SELECT 
     (SELECT COUNT(*) FROM products WHERE is_active = TRUE) AS total_products,
     (SELECT COUNT(*) FROM v_low_stock_products) AS low_stock_count,
-    (SELECT COUNT(DISTINCT p.product_id) FROM products p 
-     LEFT JOIN product_locations pl ON p.product_id = pl.product_id
-     WHERE p.is_active = TRUE
-     GROUP BY p.product_id
-     HAVING COALESCE(SUM(pl.quantity), 0) = 0) AS out_of_stock_count,
+    (SELECT COUNT(*) FROM products p 
+     WHERE p.is_active = TRUE 
+     AND NOT EXISTS (
+         SELECT 1 FROM product_locations pl 
+         WHERE pl.product_id = p.product_id AND pl.quantity > 0
+     )) AS out_of_stock_count,
     (SELECT COUNT(*) FROM receipts WHERE status IN ('DRAFT', 'WAITING', 'READY')) AS pending_receipts,
     (SELECT COUNT(*) FROM delivery_orders WHERE status IN ('DRAFT', 'WAITING', 'READY')) AS pending_deliveries,
     (SELECT COUNT(*) FROM internal_transfers WHERE status IN ('DRAFT', 'WAITING')) AS scheduled_transfers,
     (SELECT COALESCE(SUM(quantity), 0) FROM product_locations) AS total_stock_quantity;
 
--- Recent activity summary
+-- 12. Recent Activity feed (union of latest receipts, deliveries, and transfers)
 CREATE OR REPLACE VIEW v_recent_activity AS
 SELECT 
     'RECEIPT' AS activity_type,

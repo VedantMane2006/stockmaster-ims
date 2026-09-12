@@ -36,7 +36,10 @@ async function executeSqlFile(connection, filepath) {
             }
             
             for (const statement of statements) {
-                const trimmed = statement.trim();
+                let trimmed = statement.trim();
+                if (trimmed.endsWith(delimiter)) {
+                    trimmed = trimmed.slice(0, -delimiter.length).trim();
+                }
                 if (trimmed && !trimmed.startsWith('--')) {
                     try {
                         await connection.query(trimmed);
