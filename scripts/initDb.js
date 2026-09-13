@@ -10,41 +10,16 @@ async function executeSqlFile(connection, filepath) {
         
         // Split by delimiter for procedures
         if (sql.includes('DELIMITER')) {
-            const statements = [];
-            let current = [];
-            let delimiter = ';';
-            
-            for (const line of sql.split('\n')) {
-                if (line.trim().startsWith('DELIMITER')) {
-                    if (current.length > 0) {
-                        statements.push(current.join('\n'));
-                        current = [];
-                    }
-                    delimiter = line.trim().split(/\s+/).pop();
-                    continue;
-                }
+            const chunks = sql.split('$$');
+            for (let chunk of chunks) {
+                // Remove the word DELIMITER if it exists in the chunk
+                chunk = chunk.replace(/DELIMITER/g, '').trim();
                 
-                current.push(line);
-                if (line.includes(delimiter)) {
-                    statements.push(current.join('\n'));
-                    current = [];
-                }
-            }
-            
-            if (current.length > 0) {
-                statements.push(current.join('\n'));
-            }
-            
-            for (const statement of statements) {
-                let trimmed = statement.trim();
-                if (trimmed.endsWith(delimiter)) {
-                    trimmed = trimmed.slice(0, -delimiter.length).trim();
-                }
-                if (trimmed && !trimmed.startsWith('--')) {
+                if (chunk) {
                     try {
-                        await connection.query(trimmed);
+                        await connection.query(chunk);
                     } catch (err) {
-                        if (!err.message.includes('already exists')) {
+                        if (!err.message.includes('already exists') && !err.message.includes('Query was empty')) {
                             console.warn(`Warning: ${err.message}`);
                         }
                     }
