@@ -137,7 +137,7 @@ async function initializeDatabase() {
         try {
             await connection.query(`
                 INSERT IGNORE INTO users (email, password_hash, full_name, role_id) VALUES
-                ('admin@stockmaster.com', '$2a$10$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIeWU7u3oi', 'Admin User', 1)
+                ('admin@stockmaster.com', '$2a$10$hPUTbzEYUqJZz5tHqL81/eT5B6lj5Js3kJtElYv.UvGNkqPPQCq2m', 'Admin User', 1)
             `);
         } catch (err) {
             console.warn('Admin user already exists');
