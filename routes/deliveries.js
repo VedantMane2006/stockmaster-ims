@@ -213,20 +213,22 @@ router.post('/deliveries/:id/validate', authMiddleware, authorize(['ADMIN', 'MAN
         if (del.length === 0) return res.status(404).json({ error: 'Delivery not found' });
         if (del[0].status !== 'READY') return res.status(403).json({ error: 'Delivery must be in READY status to validate' });
 
-        const total = await query('SELECT SUM(quantity_delivered) as total FROM delivery_order_lines WHERE delivery_id = ?', [req.params.id]);
-        if (!total[0].total || Number(total[0].total) === 0) {
+        const totals = await query('SELECT SUM(quantity_delivered) as delivered, SUM(quantity_ordered) as ordered FROM delivery_order_lines WHERE delivery_id = ?', [req.params.id]);
+        if (!totals[0].delivered || Number(totals[0].delivered) === 0) {
             return res.status(400).json({ error: 'Cannot validate delivery: no items have been delivered.' });
         }
         
-        await callProcedure('sp_validate_delivery', [req.params.id, req.user.user_id]);
+        const finalStatus = Number(totals[0].delivered) < Number(totals[0].ordered) ? 'PARTIAL' : 'DONE';
+        
+        await callProcedure('sp_validate_delivery', [req.params.id, req.user.user_id, finalStatus]);
 
-        // Persist Delayed status
+        // Persist Delayed status and final status
         const isDelayed = del[0].scheduled_date ? new Date().setHours(0,0,0,0) > new Date(del[0].scheduled_date).setHours(0,0,0,0) : false;
 
         await query('UPDATE delivery_orders SET status = ?, is_delayed = ?, delivered_date = NOW() WHERE delivery_id = ?', 
-                    ['DONE', isDelayed, req.params.id]);
+                    [finalStatus, isDelayed, req.params.id]);
 
-        res.json({ message: 'Delivery validated, stock updated' });
+        res.json({ message: `Delivery validated as ${finalStatus}, stock updated` });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }

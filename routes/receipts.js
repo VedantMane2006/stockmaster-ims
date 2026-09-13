@@ -213,21 +213,23 @@ router.post('/receipts/:id/validate', authMiddleware, authorize(['ADMIN', 'MANAG
         if (rcp.length === 0) return res.status(404).json({ error: 'Receipt not found' });
         if (rcp[0].status !== 'READY') return res.status(403).json({ error: 'Receipt must be in READY status to validate' });
 
-        const total = await query('SELECT SUM(quantity_received) as total FROM receipt_lines WHERE receipt_id = ?', [req.params.id]);
-        if (!total[0].total || Number(total[0].total) === 0) {
+        const totals = await query('SELECT SUM(quantity_received) as received, SUM(quantity_expected) as expected FROM receipt_lines WHERE receipt_id = ?', [req.params.id]);
+        if (!totals[0].received || Number(totals[0].received) === 0) {
             return res.status(400).json({ error: 'Cannot validate receipt: no items have been received.' });
         }
         
-        // Execute stock update
-        await callProcedure('sp_validate_receipt', [req.params.id, req.user.user_id]);
+        const finalStatus = Number(totals[0].received) < Number(totals[0].expected) ? 'PARTIAL' : 'DONE';
         
-        // Persist Delayed status
+        // Execute stock update
+        await callProcedure('sp_validate_receipt', [req.params.id, req.user.user_id, finalStatus]);
+        
+        // Persist Delayed status and final status
         const isDelayed = rcp[0].scheduled_date ? new Date().setHours(0,0,0,0) > new Date(rcp[0].scheduled_date).setHours(0,0,0,0) : false;
 
         await query('UPDATE receipts SET status = ?, is_delayed = ?, received_date = NOW() WHERE receipt_id = ?', 
-                    ['DONE', isDelayed, req.params.id]);
+                    [finalStatus, isDelayed, req.params.id]);
 
-        res.json({ message: 'Receipt validated, stock updated' });
+        res.json({ message: `Receipt validated as ${finalStatus}, stock updated` });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
