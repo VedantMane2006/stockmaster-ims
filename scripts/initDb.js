@@ -8,38 +8,59 @@ async function executeSqlFile(connection, filepath) {
         console.log(`Executing ${filepath}...`);
         const sql = await fs.readFile(filepath, 'utf8');
         
-        // Split by delimiter for procedures
         if (sql.includes('DELIMITER')) {
-            const chunks = sql.split('$$');
-            for (let chunk of chunks) {
-                // Remove the word DELIMITER if it exists in the chunk
-                chunk = chunk.replace(/DELIMITER/g, '').trim();
+            // Procedure files: parse DELIMITER blocks manually
+            const statements = [];
+            let current = [];
+            let delimiter = ';';
+            
+            for (const line of sql.split('\n')) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith('DELIMITER')) {
+                    // Flush any accumulated lines before switching delimiter
+                    if (current.length > 0) {
+                        const block = current.join('\n').trim();
+                        if (block) statements.push(block);
+                        current = [];
+                    }
+                    delimiter = trimmedLine.split(/\s+/).pop();
+                    continue;
+                }
                 
-                if (chunk) {
-                    try {
-                        await connection.query(chunk);
-                    } catch (err) {
-                        if (!err.message.includes('already exists') && !err.message.includes('Query was empty')) {
-                            console.warn(`Warning: ${err.message}`);
-                        }
+                current.push(line);
+                
+                // Check if line ends with the current delimiter
+                if (trimmedLine === delimiter || trimmedLine.endsWith(delimiter)) {
+                    const block = current.join('\n').trim();
+                    // Remove trailing delimiter
+                    const clean = block.endsWith(delimiter) 
+                        ? block.slice(0, -delimiter.length).trim() 
+                        : block;
+                    if (clean && !clean.startsWith('--')) {
+                        statements.push(clean);
+                    }
+                    current = [];
+                }
+            }
+            
+            // Flush remaining
+            if (current.length > 0) {
+                const block = current.join('\n').trim();
+                if (block && !block.startsWith('--')) statements.push(block);
+            }
+            
+            for (const stmt of statements) {
+                try {
+                    await connection.query(stmt);
+                } catch (err) {
+                    if (!err.message.includes('already exists')) {
+                        console.warn(`Warning: ${err.message}`);
                     }
                 }
             }
         } else {
-            // Execute regular SQL
-            const statements = sql.split(';');
-            for (const statement of statements) {
-                const trimmed = statement.trim();
-                if (trimmed && !trimmed.startsWith('--')) {
-                    try {
-                        await connection.query(trimmed);
-                    } catch (err) {
-                        if (!err.message.includes('already exists')) {
-                            console.warn(`Warning: ${err.message}`);
-                        }
-                    }
-                }
-            }
+            // Schema and Views: run the entire file at once using multipleStatements
+            await connection.query(sql);
         }
         
         console.log(`✅ Executed ${filepath}`);

@@ -248,7 +248,6 @@ function getStatusBadge(status, scheduledDate = null, isDelayed = false) {
         'DRAFT': 'badge-draft',
         'WAITING': 'badge-waiting',
         'READY': 'badge-ready',
-        'PARTIAL': 'badge-partial',
         'DONE': 'badge-done',
         'CANCELLED': 'badge-cancelled'
     };

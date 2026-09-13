@@ -13,8 +13,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_validate_receipt$$
 CREATE PROCEDURE sp_validate_receipt(
     IN p_receipt_id INT,
-    IN p_user_id INT,
-    IN p_final_status VARCHAR(20)
+    IN p_user_id INT
 )
 BEGIN
     DECLARE v_location_id INT;
@@ -72,9 +71,9 @@ BEGIN
     
     CLOSE line_cursor;
     
-    -- Mark receipt as completed or partial
+    -- Mark receipt as completed
     UPDATE receipts
-    SET status = p_final_status,
+    SET status = 'DONE',
         received_date = NOW()
     WHERE receipt_id = p_receipt_id;
     
@@ -88,8 +87,7 @@ END$$
 DROP PROCEDURE IF EXISTS sp_validate_delivery$$
 CREATE PROCEDURE sp_validate_delivery(
     IN p_delivery_id INT,
-    IN p_user_id INT,
-    IN p_final_status VARCHAR(20)
+    IN p_user_id INT
 )
 BEGIN
     DECLARE v_location_id INT;
@@ -154,9 +152,9 @@ BEGIN
     
     CLOSE line_cursor;
     
-    -- Mark delivery as completed or partial
+    -- Mark delivery as completed
     UPDATE delivery_orders
-    SET status = p_final_status,
+    SET status = 'DONE',
         delivered_date = NOW()
     WHERE delivery_id = p_delivery_id;
     

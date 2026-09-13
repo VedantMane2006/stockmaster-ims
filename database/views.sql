@@ -268,3 +268,27 @@ SELECT
 FROM internal_transfers
 ORDER BY created_at DESC
 LIMIT 50;
+
+-- 10. Audit Log (Stock Movements with full details)
+CREATE OR REPLACE VIEW v_audit_log AS
+SELECT 
+    m.movement_id,
+    m.product_id,
+    p.sku,
+    p.product_name,
+    m.location_id,
+    l.location_name,
+    w.warehouse_name,
+    m.movement_type,
+    m.reference_type,
+    m.reference_id,
+    m.quantity_change,
+    m.quantity_after,
+    m.created_by,
+    u.full_name as created_by_name,
+    m.created_at
+FROM stock_movements m
+JOIN products p ON m.product_id = p.product_id
+JOIN locations l ON m.location_id = l.location_id
+JOIN warehouses w ON l.warehouse_id = w.warehouse_id
+JOIN users u ON m.created_by = u.user_id;
